@@ -15,7 +15,7 @@ function App() {
     },
     {
       q: 'Como funciona o pagamento?',
-      a: 'Você recebe R$ 0,10 por KM válido percorrido em áreas que precisam de mapeamento. Áreas não mapeadas (Ouro) pagam até 3x mais. O saldo é atualizado automaticamente após a validação dos dados.'
+      a: 'Você recebe R$ 0,10 fixo por KM válido percorrido em áreas que precisam de mapeamento. O desempenho do motorista e a qualidade das imagens são validados pelos administradores no nosso painel. Quando validados, o saldo é atualizado automaticamente.'
     },
     {
       q: 'O que é HONEY e como a plataforma ganha dinheiro?',
@@ -193,8 +193,8 @@ function App() {
               <div>
                 <h3>Renda Passiva Real</h3>
                 <p>
-                  Ganhe R$ 0,10 por KM válido. Em áreas não mapeadas (Ouro),
-                  esse valor pode triplicar para R$ 0,30/KM.
+                  Ganhe R$ 0,10 por KM válido. Todo o seu envio será avaliado 
+                  e validado pela nossa administração antes do pagamento.
                 </p>
               </div>
             </div>
@@ -262,40 +262,31 @@ function App() {
         <div className="container">
           <div className="section-header">
             <div className="section-label">🍯 Smart Rewards</div>
-            <h2 className="section-title">Sistema de Recompensas Inteligente</h2>
+            <h2 className="section-title">Sistema de Pagamentos Justo</h2>
             <p className="section-subtitle">
-              Quanto menos mapeada a área, maior a recompensa.
-              Áreas estratégicas pagam até 3x mais.
+              Sua rota do dia a dia se transforma em ganhos reais,
+              assegurados pela nossa plataforma mediante validação diária.
             </p>
           </div>
 
           <div className="rewards-showcase">
             <div className="reward-tiers">
               <div className="tier">
-                <div className="tier-dot gold" />
-                <div className="tier-info">
-                  <h4>🥇 Área Ouro</h4>
-                  <p>Nunca mapeada ou sem dados há mais de 30 dias</p>
-                </div>
-                <div className="tier-value">R$ 0,30/km</div>
-              </div>
-
-              <div className="tier">
                 <div className="tier-dot green" />
                 <div className="tier-info">
-                  <h4>🥈 Área Verde</h4>
-                  <p>Mapeada há 7-30 dias — precisa de atualização</p>
+                  <h4>🛣️ KM Válido & Aprovado</h4>
+                  <p>Dados devidamente aprovados no controle de qualidade</p>
                 </div>
-                <div className="tier-value">R$ 0,20/km</div>
+                <div className="tier-value">R$ 0,10 FIXO</div>
               </div>
 
               <div className="tier">
                 <div className="tier-dot red" />
                 <div className="tier-info">
-                  <h4>Área Vermelha</h4>
-                  <p>Mapeada recentemente — dados já frescos</p>
+                  <h4>🚧 Em Avaliação</h4>
+                  <p>Início das operações de motorista (Avaliação de desempenho)</p>
                 </div>
-                <div className="tier-value">R$ 0,10/km</div>
+                <div className="tier-value">0 a 100%</div>
               </div>
             </div>
 

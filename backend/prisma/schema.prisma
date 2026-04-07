@@ -54,6 +54,7 @@ model Driver {
   passwordHash   String       @map("password_hash")
   status         DriverStatus @default(pending)
   walletAddress  String?      @map("wallet_address")
+  deviceId       String?      @unique @map("device_id") // Anti-Fraude: Vínculo de Hardware
   balanceBrl     Decimal      @default(0) @map("balance_brl") @db.Decimal(10, 2)
   totalKm        Decimal      @default(0) @map("total_km") @db.Decimal(10, 2)
   totalFrames    Int          @default(0) @map("total_frames")

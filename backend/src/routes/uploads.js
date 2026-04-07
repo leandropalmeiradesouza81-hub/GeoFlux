@@ -72,6 +72,19 @@ router.post('/frames', authenticate, authorizeDriver, upload.array('images', 50)
     const parsedFrames = typeof frames === 'string' ? JSON.parse(frames) : frames;
     const files = req.files || [];
 
+    // ---> 🛡️ CAMADA DE SEGURANÇA 1: HARDWARE FINGERPRINTING
+    const deviceId = req.headers['x-device-id'];
+    if (!deviceId) throw new AppError('Acesso Negado: App adulterado sem identificador de Hardware.', 403);
+    
+    // Validar se o motorista não está abrindo duas jornadas duplas (importação sob demanda)
+    const { fraudDetectionService } = await import('../services/fraudDetectionService.js');
+    await fraudDetectionService.validateDeviceAndSession(req.user.id, deviceId);
+
+    // ---> 🛡️ CAMADA DE SEGURANÇA 2: ANTI-EMULAÇÃO (MOCK SENSORS)
+    if (!fraudDetectionService.checkPhysicalSensors(parsedFrames)) {
+      throw new AppError('Lote rejeitado por Incongruência Severa: Simulador detectado (Acelerômetro VS GPS).', 403);
+    }
+
     // Validar que a sessão pertence ao motorista
     const session = await prisma.captureSession.findFirst({
       where: { id: sessionId, driverId: req.user.id }
@@ -88,6 +101,14 @@ router.post('/frames', authenticate, authorizeDriver, upload.array('images', 50)
       if (frame.accuracy > 15) {
         logger.debug(`⚠️ Frame descartado (accuracy: ${frame.accuracy}m > 15m)`);
         continue;
+      }
+
+      // ---> 🛡️ CAMADA DE SEGURANÇA 3: MIRRORING DETECTION (Dois celulares juntos)
+      try {
+        await fraudDetectionService.checkMirroring(req.user.id, frame.latitude, frame.longitude);
+      } catch (err) {
+        logger.error(`BLOQUEIO DE MOTORISTA: Espelhamento Detectado`);
+        throw new AppError('Sua conta foi banida administrativamente.', 403);
       }
 
       const matchingFile = files.find(f => f.originalname === frame.imageFilename);
