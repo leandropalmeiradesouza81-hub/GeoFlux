@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DriverStatus {
+  pending
+  approved
+  blocked
+}
+
+enum SessionStatus {
+  capturing
+  pending_upload
+  uploading
+  uploaded
+  validated
+}
+
+enum SyncStatus {
+  local
+  syncing
+  synced
+}
+
+enum TileFreshness {
+  fresh
+  stale
+  unmapped
+}
+
+enum TransactionType {
+  km_reward
+  honey_received
+  swap_brl
+}
+
+enum TransactionStatus {
+  pending
+  confirmed
+  failed
+}
+
+model Driver {
+  id             String       @id @default(uuid())
+  name           String
+  email          String       @unique
+  phone          String       @unique
+  cpf            String       @unique
+  passwordHash   String       @map("password_hash")
+  status         DriverStatus @default(pending)
+  walletAddress  String?      @map("wallet_address")
+  balanceBrl     Decimal      @default(0) @map("balance_brl") @db.Decimal(10, 2)
+  totalKm        Decimal      @default(0) @map("total_km") @db.Decimal(10, 2)
+  totalFrames    Int          @default(0) @map("total_frames")
+  profileImage   String?      @map("profile_image")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  sessions     CaptureSession[]
+  transactions Transaction[]
+
+  @@map("drivers")
+}
+
+model CaptureSession {
+  id          String        @id @default(uuid())
+  driverId    String        @map("driver_id")
+  startTime   DateTime      @map("start_time")
+  endTime     DateTime?     @map("end_time")
+  totalKm     Decimal       @default(0) @map("total_km") @db.Decimal(10, 2)
+  totalFrames Int           @default(0) @map("total_frames")
+  validFrames Int           @default(0) @map("valid_frames")
+  status      SessionStatus @default(capturing)
+  syncStatus  SyncStatus    @default(local) @map("sync_status")
+  syncedAt    DateTime?     @map("synced_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  driver Driver  @relation(fields: [driverId], references: [id])
+  frames Frame[]
+
+  @@map("capture_sessions")
+}
+
+model Frame {
+  id           String   @id @default(uuid())
+  sessionId    String   @map("session_id")
+  latitude     Float
+  longitude    Float
+  altitude     Float?
+  speed        Float?
+  bearing      Float?
+  accuracy     Float
+  capturedAt   DateTime @map("captured_at")
+  imagePath    String?  @map("image_path")
+  metadataJson Json?    @map("metadata_json")
+  tileHexId    String?  @map("tile_hex_id")
+  tileStatus   String?  @map("tile_status")
+  isValid      Boolean  @default(true) @map("is_valid")
+  signature    String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  session CaptureSession @relation(fields: [sessionId], references: [id])
+
+  @@index([tileHexId])
+  @@index([capturedAt])
+  @@map("frames")
+}
+
+model Transaction {
+  id        String            @id @default(uuid())
+  driverId  String            @map("driver_id")
+  type      TransactionType
+  amount    Decimal           @db.Decimal(18, 8)
+  currency  String            @default("BRL")
+  txHash    String?           @map("tx_hash")
+  status    TransactionStatus @default(pending)
+  note      String?
+  createdAt DateTime          @default(now()) @map("created_at")
+
+  driver Driver @relation(fields: [driverId], references: [id])
+
+  @@index([driverId])
+  @@map("transactions")
+}
+
+model TileCache {
+  hexId         String        @id @map("hex_id")
+  freshness     TileFreshness @default(unmapped)
+  daysSinceMapped Int?        @map("days_since_mapped")
+  lastChecked   DateTime      @map("last_checked")
+  lastMapped    DateTime?     @map("last_mapped")
+  metadata      Json?
+
+  @@map("tile_cache")
+}
+
+model Admin {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  role         String   @default("admin")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("admins")
+}
