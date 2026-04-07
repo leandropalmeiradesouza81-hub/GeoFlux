@@ -138,7 +138,12 @@ router.post('/frames', authenticate, authorizeDriver, upload.array('images', 50)
 
     logger.info(`📤 Upload: ${createdFrames.length}/${parsedFrames.length} frames aceitos (session: ${sessionId})`);
 
-    // TODO: Enfileirar processamento de privacidade (blur faces/plates) + upload para Hivemapper
+    // ✅ Abordagem de Filas Distribuídas para Escalabilidade Multi-marketplace
+    if (createdFrames.length > 0) {
+      // Importante: No topo do arquivo você deve importar: import { queueService } from '../services/queueService.js';
+      const { queueService } = await import('../services/queueService.js');
+      await queueService.enqueueInitialFrames(createdFrames.map(f => f.id));
+    }
 
     res.json({
       success: true,
@@ -146,7 +151,7 @@ router.post('/frames', authenticate, authorizeDriver, upload.array('images', 50)
         accepted: createdFrames.length,
         rejected: parsedFrames.length - createdFrames.length,
         sessionId,
-        message: 'Frames recebidos. Processamento de privacidade será iniciado.'
+        message: 'Frames recebidos. Adicionados à fila de processamento Privacy -> Hivemapper & Mapillary.'
       }
     });
   } catch (error) {
