@@ -15,6 +15,8 @@
   "dependencies": {
     "@prisma/client": "^6.0.0",
     "@solana/web3.js": "^1.95.0",
+    "archiver": "^7.0.1",
+    "axios": "^1.14.0",
     "bcrypt": "^5.1.1",
     "bullmq": "^5.73.0",
     "cors": "^2.8.5",
@@ -22,6 +24,7 @@
     "express": "^4.21.0",
     "express-rate-limit": "^7.4.0",
     "express-validator": "^7.2.0",
+    "form-data": "^4.0.5",
     "helmet": "^8.0.0",
     "ioredis": "^5.10.1",
     "jsonwebtoken": "^9.0.2",

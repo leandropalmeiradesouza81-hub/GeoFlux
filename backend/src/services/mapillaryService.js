@@ -9,6 +9,11 @@
 import { logger } from '../utils/logger.js';
 import piexif from 'piexifjs';
 import fs from 'fs/promises';
+import fsSync from 'fs';
+import path from 'path';
+import axios from 'axios';
+import FormData from 'form-data';
+import archiver from 'archiver';
 
 class MapillaryService {
   constructor() {
@@ -24,12 +29,9 @@ class MapillaryService {
    */
   async injectExifData(imagePath, frame) {
     try {
-      // 1. O módulo Piexif.js requer a imagem em base64 (Data URI)
       let imageBuffer = await fs.readFile(imagePath);
       let jpegData = imageBuffer.toString("binary");
 
-      // O Mapillary exige coordenadas (lat/lon), Timestamp, Altitude e Bearing (Direção da bússola)
-      // Formatações confusas do EXIF
       const latDeg = this.decimalToDMS(frame.latitude);
       const lonDeg = this.decimalToDMS(frame.longitude);
       const latRef = frame.latitude >= 0 ? "N" : "S";
@@ -44,7 +46,6 @@ class MapillaryService {
 
       zeroth[piexif.ImageIFD.Make] = "GeoFlux Multi-Marketplace";
       zeroth[piexif.ImageIFD.Model] = "GeoFlux App V1";
-
       exif[piexif.ExifIFD.DateTimeOriginal] = dateTimeStr;
 
       gps[piexif.GPSIFD.GPSLatitudeRef] = latRef;
@@ -58,14 +59,13 @@ class MapillaryService {
       }
       
       if (frame.bearing) {
-        gps[piexif.GPSIFD.GPSImgDirectionRef] = "T"; // True north
+        gps[piexif.GPSIFD.GPSImgDirectionRef] = "T";
         gps[piexif.GPSIFD.GPSImgDirection] = [Math.round(frame.bearing * 100), 100];
       }
 
       const exifObj = { "0th": zeroth, "Exif": exif, "GPS": gps };
       const exifbytes = piexif.dump(exifObj);
 
-      // Injeta na imagem
       const newData = piexif.insert(exifbytes, jpegData);
       const outputBuffer = Buffer.from(newData, "binary");
 
@@ -88,20 +88,82 @@ class MapillaryService {
   }
 
   /**
-   * Envia uma sequência de imagens para os servidores da Mapillary 
+   * Envia uma sequência de imagens para os servidores da Mapillary via API Graph.
    */
   async submitSequence(sequenceFrames) {
+    if (!this.uploadToken) {
+      logger.warn('MAPILLARY_UPLOAD_TOKEN não configurado. Pulo do Upload Web.');
+      return { success: false, reason: 'missing_token' };
+    }
+
     logger.info(`🗺️ Iniciando submissão de Sequence para Mapillary: ${sequenceFrames.length} frames.`);
     
-    // WIP: Fluxo real exige iniciar um "Upload Session" via REST API da Mapillary, 
-    // depois enviar as imagens envelopadas num .zip via cURL.
-    
-    return {
-      success: true,
-      provider: 'Mapillary',
-      framesSubmitted: sequenceFrames.length,
-      sequenceId: `seq_mock_${Date.now()}`
-    };
+    // 1. Criar um arquivo zip contendo todas as imagens da sequencia
+    const zipPath = path.resolve(`./uploads/temp/seq_${Date.now()}.zip`);
+    await this.createZipArchive(sequenceFrames, zipPath);
+
+    try {
+      // 2. Start Upload Session Node
+      const sessionUrl = `https://graph.mapillary.com/uploads?access_token=${this.uploadToken}`;
+      const sessionRes = await axios.post(sessionUrl, {
+        "file_type": "zip" 
+      }, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const { id: sessionId, url: uploadUrl } = sessionRes.data;
+      
+      // 3. Efetuar Upload de fato do ZIP via HTTP
+      const formData = new FormData();
+      const zipStream = fsSync.createReadStream(zipPath);
+      formData.append('file', zipStream);
+
+      // Usar sessionUploadUrl extraído, adicionar metadata de authentication e org se necessário
+      await axios.post(uploadUrl, formData, {
+        headers: {
+          ...formData.getHeaders(),
+          'Authorization': `OAuth ${this.uploadToken}`
+        }
+      });
+
+      // 4. Closed connection - Encerra para Mapillary processar
+      const closeUrl = `https://graph.mapillary.com/${sessionId}/closed?access_token=${this.uploadToken}`;
+      await axios.post(closeUrl);
+
+      logger.info(`✅ [Mapillary] Sequencia submetida com sucesso! SessionID: ${sessionId}`);
+
+      return {
+        success: true,
+        provider: 'Mapillary',
+        framesSubmitted: sequenceFrames.length,
+        sequenceId: sessionId
+      };
+    } catch (error) {
+      logger.error(`❌ Falha no Upload Graph API da Mapillary: ${error.message}`);
+      return { success: false, error: error.message };
+    } finally {
+      // Limpeza segura
+      await fs.unlink(zipPath).catch(() => {});
+    }
+  }
+
+  createZipArchive(sequenceFrames, zipPath) {
+    return new Promise((resolve, reject) => {
+      const output = fsSync.createWriteStream(zipPath);
+      const archive = archiver('zip', { zlib: { level: 9 } });
+
+      output.on('close', () => resolve(true));
+      archive.on('error', (err) => reject(err));
+
+      archive.pipe(output);
+
+      for (const frame of sequenceFrames) {
+         if (fsSync.existsSync(frame.imagePath)) {
+            archive.file(frame.imagePath, { name: path.basename(frame.imagePath) });
+         }
+      }
+      archive.finalize();
+    });
   }
 }
 

@@ -34,9 +34,11 @@ enum TileFreshness {
 }
 
 enum TransactionType {
-  km_reward
-  honey_received
-  swap_brl
+  km_reward // Ganhos em reais pagos ao motorista (R$ 0,10 fixo por KM)
+  honey_received // Receita Bruta da GeoFlux via Hivemapper
+  natix_received // Receita Bruta da GeoFlux via NATIX
+  mapillary_received // Receita Bruta da GeoFlux via Mapillary
+  swap_brl // Swap de tokens para BRL
 }
 
 enum TransactionStatus {

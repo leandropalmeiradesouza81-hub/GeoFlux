@@ -18,8 +18,8 @@ function App() {
       a: 'Você recebe R$ 0,10 fixo por KM válido percorrido em áreas que precisam de mapeamento. O desempenho do motorista e a qualidade das imagens são validados pelos administradores no nosso painel. Quando validados, o saldo é atualizado automaticamente.'
     },
     {
-      q: 'O que é HONEY e como a plataforma ganha dinheiro?',
-      a: 'HONEY é o token da rede Hivemapper na blockchain Solana. Quando seus dados são aceitos pela rede, a plataforma GeoFlux recebe tokens HONEY como recompensa. O GeoFlux converte esses tokens em Reais e paga você um valor fixo por KM, assumindo o risco da volatilidade.'
+      q: 'O que é a plataforma GeoFlux e como a empresa ganha dinheiro?',
+      a: 'O GeoFlux atende a empresas de logística, prefeituras e serviços de IA que precisam de dados visuais atualizados das ruas. Quando seus dados são aceitos pelos nossos clientes corporativos através de APIs B2B, você recebe seu valor fixo por KM e o GeoFlux fica com a margem corporativa. Tudo de forma automática e transparente.'
     },
     {
       q: 'Posso usar enquanto dirijo para Uber/99?',
@@ -291,9 +291,9 @@ function App() {
             </div>
 
             <div className="reward-visual">
-              <div className="honey-token">🍯</div>
-              <div className="honey-label">HONEY Token</div>
-              <div className="honey-sublabel">Recompensa da rede Hivemapper (Solana)</div>
+              <div className="honey-token">💵</div>
+              <div className="honey-label">Ganhos GeoFlux</div>
+              <div className="honey-sublabel">Sacáveis via PIX rapidamente</div>
             </div>
           </div>
         </div>
@@ -337,15 +337,9 @@ function App() {
             </div>
             <div className="pipeline-arrow">→</div>
             <div className="pipeline-step">
-              <div className="icon">🌐</div>
-              <div className="name">Hivemapper</div>
-              <div className="desc">Rede global</div>
-            </div>
-            <div className="pipeline-arrow">→</div>
-            <div className="pipeline-step">
-              <div className="icon">🍯</div>
-              <div className="name">HONEY</div>
-              <div className="desc">Recompensa</div>
+              <div className="icon">🏆</div>
+              <div className="name">Ganhos GeoFlux</div>
+              <div className="desc">Recompensa BRL</div>
             </div>
           </div>
         </div>
@@ -435,15 +429,15 @@ function App() {
               <ul>
                 <li><a href="#faq">FAQ</a></li>
                 <li><a href="#">Contato</a></li>
-                <li><a href="https://discord.gg/hivemapper" target="_blank" rel="noopener noreferrer">Discord Hivemapper</a></li>
-                <li><a href="https://github.com/hivemapper" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+                <li><a href="https://discord.gg/" target="_blank" rel="noopener noreferrer">Discord Oficial</a></li>
+                <li><a href="https://github.com/geoflux" target="_blank" rel="noopener noreferrer">GitHub</a></li>
               </ul>
             </div>
           </div>
 
           <div className="footer-bottom">
             <span>© 2026 GeoFlux Rio. Todos os direitos reservados.</span>
-            <span>Powered by Hivemapper Network · Solana Blockchain</span>
+            <span>Powered by GeoFlux Infrastructure</span>
           </div>
         </div>
       </footer>
