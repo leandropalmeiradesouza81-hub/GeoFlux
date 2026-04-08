@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Polygon, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { 
   Menu, X, Wallet, User, Play, Square, Wifi, Navigation, 
   Settings, LogOut, ChevronRight, Activity, Zap, ShieldCheck,
-  ChevronRightIcon
+  ChevronRightIcon, Camera, CreditCard, History, AlertCircle
 } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
@@ -25,9 +25,7 @@ const carIcon = new L.DivIcon({
 
 function MapRefresher({ center }) {
   const map = useMap();
-  useEffect(() => {
-    if (center) map.setView(center, map.getZoom());
-  }, [center, map]);
+  useEffect(() => { if (center) map.setView(center, map.getZoom()); }, [center, map]);
   return null;
 }
 
@@ -35,10 +33,7 @@ const getHexBounds = (lat, lon, r = 0.0022) => {
   const bounds = [];
   for (let i = 0; i < 6; i++) {
     const angle = (Math.PI / 3) * i + (Math.PI / 6);
-    bounds.push([
-      lat + r * Math.sin(angle),
-      lon + (r / Math.cos(lat * Math.PI / 180)) * Math.cos(angle)
-    ]);
+    bounds.push([lat + r * Math.sin(angle), lon + (r / Math.cos(lat * Math.PI / 180)) * Math.cos(angle)]);
   }
   return bounds;
 };
@@ -53,23 +48,43 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [proofs, setProofs] = useState([]);
   const [sliderValue, setSliderValue] = useState(0);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const videoRef = useRef(null);
 
-  // 1. GEOLOCATION with Simulator Fallback
+  // 1. CAMERA ACCESS (Required for functioning)
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setPos([-22.9719, -43.1843]);
-      return;
+    async function setupCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'environment' },
+          audio: false 
+        });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        setCameraActive(true);
+      } catch (err) {
+        console.error("Camera error:", err);
+        setCameraError("Câmera não detectada. O mapeamento requer uma câmera ativa.");
+        setCameraActive(false);
+      }
     }
-    const timer = setTimeout(() => { if (!pos) setPos([-22.9719, -43.1843]); }, 5000);
+    if (screen === 'map') setupCamera();
+  }, [screen]);
+
+  // 2. GEOLOCATION (No auto-fallback to simulation unless camera is active)
+  useEffect(() => {
+    if (!navigator.geolocation) return;
     const watchId = navigator.geolocation.watchPosition(
       (position) => setPos([position.coords.latitude, position.coords.longitude]),
-      (err) => setPos([-22.9719, -43.1843]),
+      (err) => setPos([-22.9719, -43.1843]), // Fallback coordinates but app will block if no camera
       { enableHighAccuracy: true, maximumAge: 0 }
     );
-    return () => { navigator.geolocation.clearWatch(watchId); clearTimeout(timer); };
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  // 2. FETCH TILES
+  // 3. FETCH TILES
   useEffect(() => {
     if (!pos || screen !== 'map') return;
     const fetchTiles = async () => {
@@ -83,10 +98,10 @@ export default function App() {
     fetchTiles();
   }, [pos, screen]);
 
-  // 3. CAPTURE LOGIC
+  // 4. CAPTURE LOGIC
   useEffect(() => {
     let interval;
-    if (isCapturing) {
+    if (isCapturing && cameraActive) {
       interval = setInterval(() => {
         setKm(prev => prev + 0.008);
         setEarnings(prev => prev + (0.008 * 0.10));
@@ -101,14 +116,131 @@ export default function App() {
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isCapturing]);
+  }, [isCapturing, cameraActive]);
 
   const handleSlider = (e) => {
     const val = parseInt(e.target.value);
     setSliderValue(val);
     if (val > 80) {
+      if (!cameraActive) {
+        alert("Erro: Câmera obrigatória para iniciar mapeamento!");
+        setSliderValue(0);
+        return;
+      }
       setIsCapturing(!isCapturing);
       setSliderValue(0);
+    }
+  };
+
+  const renderContent = () => {
+    switch (screen) {
+      case 'wallet':
+        return (
+          <div className="sub-screen">
+             <header className="sub-header">
+                <button onClick={() => setScreen('map')}><ChevronRight style={{transform: 'rotate(180deg)'}} /></button>
+                <h2>Minha Carteira</h2>
+                <div />
+             </header>
+             <div className="wallet-card">
+                <span>Saldo Disponível (PIX)</span>
+                <h1>R$ {earnings.toFixed(2)}</h1>
+                <p>Transferências instantâneas via frotistas</p>
+             </div>
+             <div className="wallet-actions">
+                <button className="btn-withdraw">SOLICITAR SAQUE PIX</button>
+             </div>
+             <div className="transactions-list">
+                <h3>Atividade Recente</h3>
+                <div className="trx-item">
+                   <div className="trx-info">
+                      <strong>Mapeamento Regional</strong>
+                      <span>8 de Abr, 2026 - Rio</span>
+                   </div>
+                   <div className="trx-val">+ R$ {earnings.toFixed(2)}</div>
+                </div>
+             </div>
+          </div>
+        );
+      case 'history':
+        return (
+          <div className="sub-screen">
+             <header className="sub-header">
+                <button onClick={() => setScreen('map')}><ChevronRight style={{transform: 'rotate(180deg)'}} /></button>
+                <h2>Histórico de Rotas</h2>
+                <div />
+             </header>
+             <div className="history-list">
+                <div className="hist-item">
+                   <Navigation size={20} />
+                   <div className="hist-meta">
+                      <strong>Barra da Tijuca - Sul</strong>
+                      <span>12.4 km coletados • R$ 1.24</span>
+                   </div>
+                </div>
+                <div className="hist-item">
+                   <Navigation size={20} />
+                   <div className="hist-meta">
+                      <strong>Copacabana - Orla</strong>
+                      <span>5.8 km coletados • R$ 0.58</span>
+                   </div>
+                </div>
+             </div>
+          </div>
+        );
+      case 'map':
+      default:
+        return (
+          <main className="app-fullscreen-map">
+            {pos ? (
+              <MapContainer center={pos} zoom={14} zoomControl={false} style={{ height: '100%', width: '100%' }}>
+                <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+                {tiles.filter(t => t.status === 'stale').map((tile, idx) => (
+                  <Polygon 
+                    key={idx}
+                    positions={getHexBounds(tile.lat, tile.lon, 0.002)}
+                    pathOptions={{ fillColor: '#00D4AA', fillOpacity: 0.1, color: '#00D4AA', weight: 0, className: 'heatmap-zone' }}
+                  />
+                ))}
+                <Marker position={pos} icon={carIcon} />
+                <MapRefresher center={pos} />
+              </MapContainer>
+            ) : (
+              <div className="map-init-loader">Obtendo Posicionamento...</div>
+            )}
+
+            {/* Camera Preview PIP */}
+            <div className={`camera-pip ${cameraActive ? 'active' : 'error'}`}>
+               <video ref={videoRef} autoPlay playsInline muted />
+               {!cameraActive && <AlertCircle size={20} />}
+            </div>
+            
+            <div className="map-hud-stats">
+               <div className="hud-card"><span>SALDO</span><strong>R$ {earnings.toFixed(2)}</strong></div>
+               <div className="hud-break"></div>
+               <div className="hud-card"><span>KM TOTAL</span><strong>{(km).toFixed(2)} km</strong></div>
+               <div className="hud-break"></div>
+               <div className="hud-card"><span>CAMERA</span><strong style={{color: cameraActive ? 'green' : 'red'}}>{cameraActive ? 'OK' : 'OFF'}</strong></div>
+            </div>
+
+            <div className="map-slider-area">
+                {!cameraActive && <div className="cam-warning">Conecte a câmera para iniciar</div>}
+                <div className={`slider-track ${isCapturing ? 'active' : ''} ${!cameraActive ? 'disabled' : ''}`}>
+                   <div className="slider-label">
+                      {isCapturing ? 'DESLIZE PARA PARAR' : 'DESLIZE PARA INICIAR'}
+                   </div>
+                   <input type="range" min="0" max="100" value={sliderValue} 
+                      onChange={handleSlider} onMouseUp={() => setSliderValue(0)} onTouchEnd={() => setSliderValue(0)}
+                      className="slider-input" disabled={!cameraActive} />
+                   <div className="slider-thumb" style={{ left: `${sliderValue}%` }}>
+                      {isCapturing ? <Square size={20} fill="white" /> : <ChevronRightIcon size={24} />}
+                   </div>
+                </div>
+            </div>
+
+            {isCapturing && <div className="rec-indicator-dot"></div>}
+          </main>
+        );
     }
   };
 
@@ -117,8 +249,8 @@ export default function App() {
       <div className="app-container login-bg">
         <div className="login-glass">
           <h1>GeoFlux</h1>
-          <p>Plataforma de Mapeamento</p>
-          <button className="btn-primary-app" onClick={() => setScreen('map')}>ENTRAR NO MAPA</button>
+          <p>Driver Hub • Mapeamento 0,10/km</p>
+          <button className="btn-primary-app" onClick={() => setScreen('map')}>ACESSAR SISTEMA</button>
         </div>
       </div>
     );
@@ -126,7 +258,6 @@ export default function App() {
 
   return (
     <div className="app-container main-bg">
-      {/* Navbar Translucida Swapped */}
       <header className="app-navbar-minimal">
          <button className="btn-hamburger" onClick={() => setMenuOpen(true)}>
             <Menu size={26} strokeWidth={2.5} />
@@ -134,66 +265,7 @@ export default function App() {
          <div className="nav-logo-right">GeoFlux</div>
       </header>
 
-      {/* Main Map Background */}
-      <main className="app-fullscreen-map">
-        {pos ? (
-          <MapContainer center={pos} zoom={14} zoomControl={false} style={{ height: '100%', width: '100%' }}>
-            <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
-            {tiles.filter(t => t.status === 'stale').map((tile, idx) => (
-              <Polygon 
-                key={idx}
-                positions={getHexBounds(tile.lat, tile.lon, 0.002)}
-                pathOptions={{ fillColor: '#00D4AA', fillOpacity: 0.1, color: '#00D4AA', weight: 0, className: 'heatmap-zone' }}
-              />
-            ))}
-            <Marker position={pos} icon={carIcon} />
-            <MapRefresher center={pos} />
-          </MapContainer>
-        ) : (
-          <div className="map-init-loader">Sincronizando...</div>
-        )}
-        
-        {/* HUD Stats Overlay Top Discreet */}
-        <div className="map-hud-stats">
-           <div className="hud-card">
-              <span>GANHO</span>
-              <strong>R$ {earnings.toFixed(2)}</strong>
-           </div>
-           <div className="hud-break"></div>
-           <div className="hud-card">
-              <span>KM VÁLIDO</span>
-              <strong>{(km).toFixed(2)} km</strong>
-           </div>
-           <div className="hud-break"></div>
-           <div className="hud-card">
-              <span>MAPA</span>
-              <strong>12%</strong>
-           </div>
-        </div>
-
-        {/* Start/Stop SLIDER Center-Bottom */}
-        <div className="map-slider-area">
-            <div className={`slider-track ${isCapturing ? 'active' : ''}`}>
-               <div className="slider-label">
-                  {isCapturing ? 'DESLIZE PARA PARAR' : 'DESLIZE PARA INICIAR'}
-               </div>
-               <input 
-                  type="range" 
-                  min="0" max="100" 
-                  value={sliderValue} 
-                  onChange={handleSlider}
-                  onMouseUp={() => setSliderValue(0)}
-                  onTouchEnd={() => setSliderValue(0)}
-                  className="slider-input" 
-               />
-               <div className="slider-thumb" style={{ left: `${sliderValue}%` }}>
-                  {isCapturing ? <Square size={20} fill="white" /> : <ChevronRightIcon size={24} />}
-               </div>
-            </div>
-        </div>
-
-        {isCapturing && <div className="rec-indicator-dot"></div>}
-      </main>
+      {renderContent()}
 
       {/* Side Menu */}
       <div className={`app-side-menu ${menuOpen ? 'open' : ''}`}>
@@ -202,30 +274,34 @@ export default function App() {
             <header className="menu-header">
                <div className="user-profile">
                   <div className="u-avatar">LR</div>
-                  <div className="u-meta">
-                     <h3>Leandro Palmeira</h3>
-                     <span>Ativo: {km.toFixed(1)} km</span>
-                  </div>
+                  <div className="u-meta"><h3>Leandro P.</h3><span>Status: Motorista Nível 1</span></div>
                </div>
                <button className="btn-close-menu" onClick={() => setMenuOpen(false)}><X size={24} /></button>
             </header>
             <div className="menu-scroll-area">
+               <div className="menu-balance-pill">
+                  <span>SALDO ATUAL</span>
+                  <strong>R$ {earnings.toFixed(2)}</strong>
+               </div>
+               <nav className="menu-nav-links">
+                  <div className="menu-link-item" onClick={() => { setScreen('wallet'); setMenuOpen(false); }}>
+                     <CreditCard size={20} /><span>Carteira & Saques</span>
+                  </div>
+                  <div className="menu-link-item" onClick={() => { setScreen('history'); setMenuOpen(false); }}>
+                     <History size={20} /><span>Histórico de Coleta</span>
+                  </div>
+                  <div className="menu-link-item"><Activity size={20} /><span>Ranking Regional</span></div>
+                  <div className="menu-link-item"><Settings size={20} /><span>Configurações</span></div>
+                  <div className="menu-link-item" onClick={() => setScreen('login')}><LogOut size={20} /><span>Finalizar Plantão</span></div>
+               </nav>
                <section className="menu-audit-section">
-                  <header><ShieldCheck size={14} /> PROVAS DE UPLOAD</header>
+                  <header><ShieldCheck size={14} /> PROVAS HIVE / SOL</header>
                   <div className="proof-list">
                      {proofs.map(p => (
-                        <div key={p.id} className="proof-item">
-                           <div className="p-hash">{p.hash}</div>
-                           <div className="p-meta"><span>{p.time}</span><span className="p-status">{p.status}</span></div>
-                        </div>
+                        <div key={p.id} className="proof-item">{p.hash} • {p.time} • {p.status}</div>
                      ))}
                   </div>
                </section>
-               <nav className="menu-nav-links">
-                  <div className="menu-link-item"><Wallet size={20} /><span>Carteira & Saques</span></div>
-                  <div className="menu-link-item"><Activity size={20} /><span>Histórico de Rotas</span></div>
-                  <div className="menu-link-item" onClick={() => setScreen('login')}><LogOut size={20} /><span>Sair</span></div>
-               </nav>
             </div>
          </div>
       </div>
