@@ -89,12 +89,12 @@ h1 { font-size: 4rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.03e
 .navbar-inner { display: flex; justify-content: space-between; align-items: center; }
 .logo-f-container { position: relative; display: inline-block; padding-bottom: 5px; }
 .logo-maps-italic {
-  position: absolute; left: -36px; top: 18px;
-  font-size: 0.4em; font-style: italic; font-weight: 900;
+  position: absolute; left: 0px; top: 1.25em;
+  font-size: 0.45em; font-style: italic; font-weight: 950;
   color: var(--primary-glow); text-transform: uppercase;
   letter-spacing: 2px;
 }
-.navbar-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 900; font-size: 1.5rem; line-height: 0.8; }
+.navbar-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 950; font-size: 1.6rem; line-height: 1.2; }
 .logo-icon { font-size: 1.8rem; }
 
 .navbar-links { display: flex; list-style: none; gap: 32px; }

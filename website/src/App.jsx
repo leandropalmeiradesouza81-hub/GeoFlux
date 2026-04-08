@@ -160,7 +160,9 @@ function App() {
           </ul>
 
           <div className="navbar-cta">
-            <button className="btn btn-primary shadow-glow" onClick={() => setView('driver-app-access')}>Acesso Motorista</button>
+            <button className="btn btn-primary btn-sm" onClick={() => window.open('https://192.168.0.12:5175', '_blank')}>
+            Acesso Motorista
+          </button>
           </div>
         </div>
       </nav>
@@ -175,7 +177,7 @@ function App() {
               Mapeie ruas, detecte anomalias e receba por quilômetro percorrido em áreas prioritárias.
             </p>
             <div className="hero-actions">
-               <button className="btn btn-primary btn-lg" onClick={() => setView('driver-app-access')}>Começar a Ganhar</button>
+                <button className="btn btn-primary btn-lg" onClick={() => window.open('https://192.168.0.12:5175', '_blank')}>Começar a Ganhar</button>
                <div className="earnings-preview">
                   <strong>R$ 0,10 / km</strong>
                   <span>Áreas com &gt; 7 dias sem atualização</span>
