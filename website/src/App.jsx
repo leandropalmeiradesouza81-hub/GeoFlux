@@ -150,7 +150,7 @@ function App() {
         <div className="navbar-inner">
           <a href="#" className="navbar-logo">
             <div className="logo-icon">🌐</div>
-            <span className="text-gradient">GeoF<span style={{position:'relative'}}>lux<i style={{position:'absolute', left:'-10px', top:'20px', fontSize:'0.45em', color:'var(--primary-glow)', fontStyle:'italic', fontWeight:'900', letterSpacing:'1px'}}>Maps</i></span></span>
+            <span className="text-gradient">GeoF<span className="logo-f-container">lux<br/><i className="logo-maps-italic">Maps</i></span></span>
           </a>
 
           <ul className="navbar-links">

@@ -201,7 +201,10 @@ export default function App() {
           <main className="app-fullscreen-map">
             {pos ? (
               <MapContainer center={pos} zoom={18} zoomControl={false} style={{ height: '100%', width: '100%' }}>
-                <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+                <TileLayer 
+                  url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" 
+                  attribution="" 
+                />
                 <MapEventsHandler onManualControl={setIsManualMapControl} />
 
                 {/* Pintura de Ruas Real (Hivemapper Pattern) */}
@@ -327,7 +330,7 @@ export default function App() {
             <header className="menu-header">
                <div className="user-profile">
                   <div className="u-avatar">LP</div>
-                  <div className="u-meta"><h3>{screen === 'login' ? 'Login' : 'Leandro Palmeira'}</h3><span>Motorista Fleet #882</span></div>
+                  <div className="u-meta"><h3>{screen === 'login' ? 'Login' : 'Leandro Palmeira'}</h3><span>Motorista Verificado #882</span></div>
                </div>
                <button className="btn-close-menu" onClick={() => setMenuOpen(false)}><X size={24} /></button>
             </header>
