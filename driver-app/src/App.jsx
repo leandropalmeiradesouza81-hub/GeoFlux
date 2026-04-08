@@ -239,11 +239,11 @@ export default function App() {
             </div>
             
             <div className="map-hud-stats">
-               <div className="hud-card"><span>RECOMPENSA</span><strong style={{color: '#00D4AA'}}>R$ {earnings.toFixed(2)}</strong></div>
+               <div className="hud-card"><span>GANHO</span><strong style={{color: '#00D4AA'}}>R$ {earnings.toFixed(2)}</strong></div>
                <div className="hud-break"></div>
-               <div className="hud-card"><span>KM VÁLIDO</span><strong>{km.toFixed(2)} km</strong></div>
+               <div className="hud-card"><span>DASHCAM</span><strong style={{color: cameraActive ? '#00D4AA' : '#FF5252'}}>{cameraActive ? 'WIFI-LINK' : 'OFFLINE'}</strong></div>
                <div className="hud-break"></div>
-               <div className="hud-card"><span>IA SENSOR</span><strong>{lastDetections[0] || 'Ativo'}</strong></div>
+               <div className="hud-card"><span>COBERTURA</span><strong>{km.toFixed(2)} km</strong></div>
             </div>
 
             <div className="map-slider-area">
@@ -279,7 +279,7 @@ export default function App() {
         <div className="login-form-container">
           <div className="login-brand">
              <div className="brand-logo-glow">G</div>
-             <h1>GeoFlux</h1>
+             <h1>GeoF<span className="logo-f-container">lux<br/><i className="logo-maps-italic">Maps</i></span></h1>
              <p>DRIVER REWARDS</p>
           </div>
           
@@ -313,7 +313,9 @@ export default function App() {
          <button className="btn-hamburger" onClick={() => setMenuOpen(true)}>
             <Menu size={26} strokeWidth={2.5} />
          </button>
-         <div className="nav-logo-right">GeoFlux</div>
+         <div className="nav-logo-right">
+            GeoF<span className="logo-f-container">lux<br/><i className="logo-maps-italic">Maps</i></span>
+         </div>
       </header>
 
       {renderContent()}

@@ -150,7 +150,7 @@ function App() {
         <div className="navbar-inner">
           <a href="#" className="navbar-logo">
             <div className="logo-icon">🌐</div>
-            <span className="text-gradient">GeoFlux</span>
+            <span className="text-gradient">GeoF<span style={{position:'relative'}}>lux<i style={{position:'absolute', left:'-10px', top:'20px', fontSize:'0.45em', color:'var(--primary-glow)', fontStyle:'italic', fontWeight:'900', letterSpacing:'1px'}}>Maps</i></span></span>
           </a>
 
           <ul className="navbar-links">
@@ -178,7 +178,7 @@ function App() {
                <button className="btn btn-primary btn-lg" onClick={() => setView('driver-app-access')}>Começar a Ganhar</button>
                <div className="earnings-preview">
                   <strong>R$ 0,10 / km</strong>
-                  <span>Áreas com > 7 dias sem atualização</span>
+                  <span>Áreas com &gt; 7 dias sem atualização</span>
                </div>
             </div>
           </div>
