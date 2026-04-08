@@ -1,5 +1,6 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import { integrationService } from '../services/integrationService.js';
 
 const router = express.Router();
 
@@ -17,26 +18,29 @@ const mockAIObjects = [
 router.post('/upload', async (req, res) => {
   try {
     const { latitude, longitude, timestamp, image } = req.body;
-    
-    // Gerar ID do frame
     const frameId = uuidv4();
     
-    // Simular processamento de IA
+    // 1. IA Filter (GeoFlux Local)
     const detections = [];
     if (Math.random() > 0.4) {
       detections.push(mockAIObjects[Math.floor(Math.random() * mockAIObjects.length)]);
     }
     
-    console.log(`[AI SERVICE] Frame ${frameId.substr(0,8)} recebido em ${latitude}, ${longitude}`);
-    if (detections.length > 0) {
-      console.log(`[AI DETECTED] ${detections.join(', ')}`);
-    }
+    // 2. Multi-Relay Integration (Hivemapper, Mapillary, NATIX)
+    const integrationResults = await integrationService.relayData({
+      id: frameId,
+      latitude,
+      longitude,
+      timestamp,
+      image
+    });
 
     res.json({
       success: true,
       frameId,
       detections,
-      message: "Frame processado pela IA GeoFlux com sucesso"
+      integrations: integrationResults,
+      message: "Frame processado e distribuído para Hivemapper, Mapillary e NATIX"
     });
 
   } catch (error) {
