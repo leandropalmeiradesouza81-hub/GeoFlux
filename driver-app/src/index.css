@@ -161,8 +161,15 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden;
 
 /* LOGIN SCREEN */
 .login-screen-premium {
-  background: var(--bg-dark);
+  background-image: url('C:/Users/leand/.gemini/antigravity/brain/4b116237-3c09-4bb8-bdb4-ac3151c37d4a/geoflux_login_tech_bg_1775665822402.png');
+  background-size: cover; background-position: center;
   height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+  position: relative; overflow: hidden;
+}
+.login-overlay {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at center, rgba(0,212,170,0.05) 0%, rgba(0,0,0,0.85) 80%);
+  backdrop-filter: blur(2px);
 }
 .login-form-container {
   width: 100%; max-width: 400px; padding: 40px;
