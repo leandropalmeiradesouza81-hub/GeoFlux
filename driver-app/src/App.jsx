@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Polygon, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polygon, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { 
   Menu, X, Wallet, User, Play, Square, Wifi, Navigation, 
   Settings, LogOut, ChevronRight, Activity, Zap, ShieldCheck,
-  ChevronRightIcon, Camera, CreditCard, History, AlertCircle
+  ChevronRightIcon, Camera, CreditCard, History, AlertCircle,
+  LocateFixed
 } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
@@ -23,9 +24,21 @@ const carIcon = new L.DivIcon({
   iconAnchor: [20, 20],
 });
 
-function MapRefresher({ center }) {
+function MapEventsHandler({ onManualControl }) {
+  useMapEvents({
+    dragstart: () => onManualControl(true),
+    zoomstart: () => onManualControl(true),
+  });
+  return null;
+}
+
+function MapRefresher({ center, isManual }) {
   const map = useMap();
-  useEffect(() => { if (center) map.setView(center, map.getZoom()); }, [center, map]);
+  useEffect(() => { 
+    if (center && !isManual) {
+      map.setView(center, map.getZoom()); 
+    }
+  }, [center, map, isManual]);
   return null;
 }
 
@@ -50,9 +63,11 @@ export default function App() {
   const [sliderValue, setSliderValue] = useState(0);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
+  const [isManualMapControl, setIsManualMapControl] = useState(false);
+  const [lastDetections, setLastDetections] = useState([]);
   const videoRef = useRef(null);
 
-  // 1. CAMERA ACCESS (Required for functioning)
+  // 1. CAMERA ACCESS
   useEffect(() => {
     async function setupCamera() {
       try {
@@ -65,20 +80,19 @@ export default function App() {
         }
         setCameraActive(true);
       } catch (err) {
-        console.error("Camera error:", err);
-        setCameraError("Câmera não detectada. O mapeamento requer uma câmera ativa.");
+        setCameraError("Câmera não detectada.");
         setCameraActive(false);
       }
     }
     if (screen === 'map') setupCamera();
   }, [screen]);
 
-  // 2. GEOLOCATION (No auto-fallback to simulation unless camera is active)
+  // 2. GEOLOCATION
   useEffect(() => {
     if (!navigator.geolocation) return;
     const watchId = navigator.geolocation.watchPosition(
       (position) => setPos([position.coords.latitude, position.coords.longitude]),
-      (err) => setPos([-22.9719, -43.1843]), // Fallback coordinates but app will block if no camera
+      (err) => { if (!pos) setPos([-22.9719, -43.1843]); },
       { enableHighAccuracy: true, maximumAge: 0 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
@@ -98,32 +112,60 @@ export default function App() {
     fetchTiles();
   }, [pos, screen]);
 
-  // 4. CAPTURE LOGIC
+  // 4. CAPTURE LOGIC & AI UPLOAD (5 seconds)
   useEffect(() => {
     let interval;
     if (isCapturing && cameraActive) {
-      interval = setInterval(() => {
-        setKm(prev => prev + 0.008);
-        setEarnings(prev => prev + (0.008 * 0.10));
-        if (Math.random() > 0.8) {
-           setProofs(prev => [{
-              id: Math.random().toString(36).substr(2, 5),
-              hash: 'SOL_' + Math.random().toString(16).substr(2, 8),
-              time: new Date().toLocaleTimeString(),
-              status: 'OK'
-           }, ...prev.slice(0, 3)]);
+      interval = setInterval(async () => {
+        setKm(prev => prev + 0.012);
+        setEarnings(prev => prev + (0.012 * 0.10));
+
+        if (videoRef.current && pos) {
+          const canvas = document.createElement('canvas');
+          canvas.width = videoRef.current.videoWidth;
+          canvas.height = videoRef.current.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(videoRef.current, 0, 0);
+          const frameData = canvas.toDataURL('image/webp', 0.5);
+
+          const payload = {
+            latitude: pos[0],
+            longitude: pos[1],
+            timestamp: new Date().toISOString(),
+            image: frameData
+          };
+
+          try {
+            const host = window.location.hostname;
+            const res = await fetch(`http://${host}:3001/api/v1/frames/upload`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            
+            if (result.success && result.detections) {
+              setLastDetections(prev => [...result.detections, ...prev].slice(0, 3));
+              setProofs(prev => [{
+                id: Math.random().toString(36).substr(2, 5),
+                hash: 'AI_DET_' + result.frameId.substr(0, 6).toUpperCase(),
+                time: new Date().toLocaleTimeString(),
+                status: 'UPLOADED'
+              }, ...prev.slice(0, 3)]);
+            }
+          } catch (err) {}
         }
-      }, 1000);
+      }, 5000);
     }
     return () => clearInterval(interval);
-  }, [isCapturing, cameraActive]);
+  }, [isCapturing, cameraActive, pos]);
 
   const handleSlider = (e) => {
     const val = parseInt(e.target.value);
     setSliderValue(val);
     if (val > 80) {
       if (!cameraActive) {
-        alert("Erro: Câmera obrigatória para iniciar mapeamento!");
+        alert("Câmera obrigatória!");
         setSliderValue(0);
         return;
       }
@@ -143,23 +185,11 @@ export default function App() {
                 <div />
              </header>
              <div className="wallet-card">
-                <span>Saldo Disponível (PIX)</span>
+                <span>Saldo Disponível</span>
                 <h1>R$ {earnings.toFixed(2)}</h1>
-                <p>Transferências instantâneas via frotistas</p>
+                <p>Pagamentos diários automáticos</p>
              </div>
-             <div className="wallet-actions">
-                <button className="btn-withdraw">SOLICITAR SAQUE PIX</button>
-             </div>
-             <div className="transactions-list">
-                <h3>Atividade Recente</h3>
-                <div className="trx-item">
-                   <div className="trx-info">
-                      <strong>Mapeamento Regional</strong>
-                      <span>8 de Abr, 2026 - Rio</span>
-                   </div>
-                   <div className="trx-val">+ R$ {earnings.toFixed(2)}</div>
-                </div>
-             </div>
+             <button className="btn-withdraw">SAQUE PIX AGORA</button>
           </div>
         );
       case 'history':
@@ -167,22 +197,15 @@ export default function App() {
           <div className="sub-screen">
              <header className="sub-header">
                 <button onClick={() => setScreen('map')}><ChevronRight style={{transform: 'rotate(180deg)'}} /></button>
-                <h2>Histórico de Rotas</h2>
+                <h2>Histórico de Coleta</h2>
                 <div />
              </header>
              <div className="history-list">
                 <div className="hist-item">
                    <Navigation size={20} />
                    <div className="hist-meta">
-                      <strong>Barra da Tijuca - Sul</strong>
-                      <span>12.4 km coletados • R$ 1.24</span>
-                   </div>
-                </div>
-                <div className="hist-item">
-                   <Navigation size={20} />
-                   <div className="hist-meta">
-                      <strong>Copacabana - Orla</strong>
-                      <span>5.8 km coletados • R$ 0.58</span>
+                      <strong>Rio de Janeiro - Região Central</strong>
+                      <span>{km.toFixed(1)} km hoje • R$ {earnings.toFixed(2)}</span>
                    </div>
                 </div>
              </div>
@@ -195,6 +218,7 @@ export default function App() {
             {pos ? (
               <MapContainer center={pos} zoom={14} zoomControl={false} style={{ height: '100%', width: '100%' }}>
                 <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+                <MapEventsHandler onManualControl={setIsManualMapControl} />
                 {tiles.filter(t => t.status === 'stale').map((tile, idx) => (
                   <Polygon 
                     key={idx}
@@ -203,13 +227,18 @@ export default function App() {
                   />
                 ))}
                 <Marker position={pos} icon={carIcon} />
-                <MapRefresher center={pos} />
+                <MapRefresher center={pos} isManual={isManualMapControl} />
               </MapContainer>
             ) : (
-              <div className="map-init-loader">Obtendo Posicionamento...</div>
+              <div className="map-init-loader">Localizando...</div>
             )}
 
-            {/* Camera Preview PIP */}
+            {isManualMapControl && (
+              <button className="btn-recenter" onClick={() => setIsManualMapControl(false)}>
+                <LocateFixed size={20} /> Centralizar em mim
+              </button>
+            )}
+
             <div className={`camera-pip ${cameraActive ? 'active' : 'error'}`}>
                <video ref={videoRef} autoPlay playsInline muted />
                {!cameraActive && <AlertCircle size={20} />}
@@ -218,13 +247,13 @@ export default function App() {
             <div className="map-hud-stats">
                <div className="hud-card"><span>SALDO</span><strong>R$ {earnings.toFixed(2)}</strong></div>
                <div className="hud-break"></div>
-               <div className="hud-card"><span>KM TOTAL</span><strong>{(km).toFixed(2)} km</strong></div>
+               <div className="hud-card"><span>KM VÁLIDO</span><strong>{(km).toFixed(2)} km</strong></div>
                <div className="hud-break"></div>
-               <div className="hud-card"><span>CAMERA</span><strong style={{color: cameraActive ? 'green' : 'red'}}>{cameraActive ? 'OK' : 'OFF'}</strong></div>
+               <div className="hud-card"><span>IA ACT</span><strong>{lastDetections.length > 0 ? lastDetections[0] : 'Idle'}</strong></div>
             </div>
 
             <div className="map-slider-area">
-                {!cameraActive && <div className="cam-warning">Conecte a câmera para iniciar</div>}
+                {!cameraActive && <div className="cam-warning">Câmera necessária para monitorar</div>}
                 <div className={`slider-track ${isCapturing ? 'active' : ''} ${!cameraActive ? 'disabled' : ''}`}>
                    <div className="slider-label">
                       {isCapturing ? 'DESLIZE PARA PARAR' : 'DESLIZE PARA INICIAR'}
@@ -249,7 +278,7 @@ export default function App() {
       <div className="app-container login-bg">
         <div className="login-glass">
           <h1>GeoFlux</h1>
-          <p>Driver Hub • Mapeamento 0,10/km</p>
+          <p>Plataforma Inteligente de Mapeamento</p>
           <button className="btn-primary-app" onClick={() => setScreen('map')}>ACESSAR SISTEMA</button>
         </div>
       </div>
@@ -267,20 +296,19 @@ export default function App() {
 
       {renderContent()}
 
-      {/* Side Menu */}
       <div className={`app-side-menu ${menuOpen ? 'open' : ''}`}>
          <div className="menu-backdrop" onClick={() => setMenuOpen(false)}></div>
          <div className="menu-content-glass">
             <header className="menu-header">
                <div className="user-profile">
-                  <div className="u-avatar">LR</div>
-                  <div className="u-meta"><h3>Leandro P.</h3><span>Status: Motorista Nível 1</span></div>
+                  <div className="u-avatar">LP</div>
+                  <div className="u-meta"><h3>Leandro Palmeira</h3><span>Motorista • Rio</span></div>
                </div>
                <button className="btn-close-menu" onClick={() => setMenuOpen(false)}><X size={24} /></button>
             </header>
             <div className="menu-scroll-area">
                <div className="menu-balance-pill">
-                  <span>SALDO ATUAL</span>
+                  <span>SALDO ACUMULADO</span>
                   <strong>R$ {earnings.toFixed(2)}</strong>
                </div>
                <nav className="menu-nav-links">
@@ -290,15 +318,16 @@ export default function App() {
                   <div className="menu-link-item" onClick={() => { setScreen('history'); setMenuOpen(false); }}>
                      <History size={20} /><span>Histórico de Coleta</span>
                   </div>
-                  <div className="menu-link-item"><Activity size={20} /><span>Ranking Regional</span></div>
-                  <div className="menu-link-item"><Settings size={20} /><span>Configurações</span></div>
-                  <div className="menu-link-item" onClick={() => setScreen('login')}><LogOut size={20} /><span>Finalizar Plantão</span></div>
+                  <div className="menu-link-item" onClick={() => setScreen('login')}><LogOut size={20} /><span>Sair</span></div>
                </nav>
                <section className="menu-audit-section">
-                  <header><ShieldCheck size={14} /> PROVAS HIVE / SOL</header>
+                  <header>INTELIGÊNCIA ARTIFICIAL (LOG)</header>
                   <div className="proof-list">
+                     {lastDetections.map((d, i) => (
+                        <div key={i} className="proof-item" style={{color: '#00D4AA'}}>Detectado: {d}</div>
+                     ))}
                      {proofs.map(p => (
-                        <div key={p.id} className="proof-item">{p.hash} • {p.time} • {p.status}</div>
+                        <div key={p.id} className="proof-item">{p.hash} • {p.time}</div>
                      ))}
                   </div>
                </section>
