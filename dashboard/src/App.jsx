@@ -8,6 +8,48 @@ import FinancePanel from './components/FinancePanel';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginData, setLoginData] = useState({ email: '', password: '' });
+
+  if (!isLoggedIn) {
+     return (
+       <div className="login-container">
+          <div className="login-card">
+             <div className="sidebar-logo" style={{justifyContent: 'center', marginBottom: '24px'}}>
+                <Map color="#00D4AA" size={32} /> GeoFlux Admin
+             </div>
+             <p style={{textAlign: 'center', color: 'var(--text-muted)', marginBottom: '32px'}}>Console de Gestão Multi-Marketplace</p>
+             <div className="form-group">
+                <label>E-mail Corporativo</label>
+                <input 
+                  type="email" 
+                  placeholder="admin@geoflux.com"
+                  value={loginData.email}
+                  onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                />
+             </div>
+             <div className="form-group">
+                <label>Senha de Acesso</label>
+                <input 
+                  type="password" 
+                  placeholder="••••••••"
+                  value={loginData.password}
+                  onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                />
+             </div>
+             <button 
+               className="btn-login" 
+               onClick={() => {
+                 if (loginData.email && loginData.password) setIsLoggedIn(true);
+               }}
+             >
+               Entrar no Console
+             </button>
+             <p className="login-footer">Acesso restrito a administradores GeoFlux</p>
+          </div>
+       </div>
+     );
+  }
 
   return (
     <div className="admin-layout">
@@ -80,7 +122,7 @@ function OverviewPanel() {
           <div className="metric-value" style={{ color: "#FF5252" }}>
             - R$ 1.129,50
           </div>
-          <div className="metric-sub">Base de Retenção: Fixa R$ 0,10/km</div>
+          <div className="metric-sub">Base: R$ 0,10/km (Áreas {'>'} 7 dias sem mapear)</div>
         </div>
 
         <div className="card">

@@ -50,7 +50,13 @@ export default function FinancePanel() {
                <h3 style={{ fontSize: '2.5rem', color: 'var(--success)' }}>R$ 0,42 <span style={{fontSize: '1rem'}}>/ km</span></h3>
             </div>
         </div>
-        <p className="metric-sub" style={{ marginTop: '16px' }}>Simulação 20 carros rodando 150km/dia: <strong>R$ 1.260,00/dia de lucro líquido.</strong></p>
+        <div style={{ borderTop: "1px solid rgba(0, 212, 170, 0.2)", paddingTop: "16px", marginTop: "16px" }}>
+           <p className="metric-sub">
+             <strong>Regra de Frescor (Fresheness):</strong> O pagamento de R$ 0,10/km é acionado apenas para áreas com timestamp de mapeamento superior a <strong>7 dias</strong>. 
+             Isso garante que o GeoFlux esteja sempre vendendo dados novos para os parceiros corporativos.
+           </p>
+        </div>
+        <p className="metric-sub" style={{ marginTop: '8px' }}>Simulação 20 carros rodando 150km/dia: <strong>R$ 1.260,00/dia de lucro líquido.</strong></p>
       </div>
 
       <div className="card">

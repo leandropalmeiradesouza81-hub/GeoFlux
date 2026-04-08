@@ -1,7 +1,30 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
+import { hivemapperService } from '../services/hivemapperService.js';
 
 const router = Router();
+
+// GET /api/v1/tiles/freshness?lat=X&lon=Y - Tiles de frescor para o mapa do motorista
+router.get('/freshness', async (req, res, next) => {
+  try {
+    const { lat, lon } = req.query;
+    if (!lat || !lon) {
+      return res.status(400).json({ success: false, error: 'lat e lon são obrigatórios' });
+    }
+
+    const tiles = await hivemapperService.getRegionFreshness(
+      parseFloat(lat), 
+      parseFloat(lon)
+    );
+
+    res.json({
+      success: true,
+      data: tiles
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // GET /api/v1/tiles/status?lat=X&lon=Y - Verificar status do tile na coordenada
 router.get('/status', authenticate, async (req, res, next) => {

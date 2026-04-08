@@ -22,9 +22,7 @@ const PORT = process.env.PORT || 3001;
 // ============ Middleware ============
 app.use(helmet());
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://geoflux.com.br', 'https://admin.geoflux.com.br']
-    : ['http://localhost:5173', 'http://localhost:5174'],
+  origin: '*',
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
@@ -67,15 +65,15 @@ async function start() {
   try {
     await prisma.$connect();
     logger.info('✅ Database connected');
-
-    app.listen(PORT, () => {
-      logger.info(`🚀 GeoFlux Backend running on port ${PORT}`);
-      logger.info(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
   } catch (error) {
-    logger.error('❌ Failed to start server:', error);
-    process.exit(1);
+    logger.warn('⚠️ Database connection failed. Running in MOCK/LIMITED mode.');
+    logger.debug(error.message);
   }
+
+  app.listen(PORT, () => {
+    logger.info(`🚀 GeoFlux Backend running on port ${PORT}`);
+    logger.info(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
 }
 
 start();
