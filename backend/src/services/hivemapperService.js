@@ -138,16 +138,17 @@ class HivemapperService {
 
   generateMockFreshness(lat, lon, radius) {
     const tiles = [];
-    const step = 0.003; // Aproximadamente o tamanho de um hexágono H3 res 9
+    const step = 0.0016; // Hexágonos menores para parecerem "ruas"
     
-    for (let i = -3; i <= 3; i++) {
-      for (let j = -3; j <= 3; j++) {
+    for (let i = -8; i <= 8; i++) {
+      for (let j = -8; j <= 8; j++) {
         const tLat = lat + (i * step);
         const tLon = lon + (j * step);
         
-        // Simulação: Áreas centrais são ricas em dados (Laranja), periferia é stale (Verde)
-        const distance = Math.sqrt(Math.pow(i, 2) + Math.pow(j, 2));
-        const daysSinceMapped = distance > 2 ? 10 : 3; 
+        // Simulação: Áreas com distâncias específicas formam "linhas" (estradas)
+        // Usamos um ruído determinístico para simular frescor
+        const pattern = Math.sin(i * 0.5) * Math.cos(j * 0.5);
+        const daysSinceMapped = pattern > 0.3 ? 10 : 3; 
         
         tiles.push({
           lat: tLat,
