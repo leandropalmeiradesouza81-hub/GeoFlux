@@ -110,7 +110,7 @@ export default function App() {
     const fetchTiles = async () => {
       try {
         const host = window.location.hostname;
-        const res = await fetch(`http://${host}:3001/api/v1/tiles/freshness?lat=${pos[0]}&lon=${pos[1]}`);
+        const res = await fetch(`/api/v1/tiles/freshness?lat=${pos[0]}&lon=${pos[1]}`);
         const result = await res.json();
         if (result.success) setTiles(result.data);
       } catch (err) {}
@@ -147,7 +147,7 @@ export default function App() {
 
           try {
             const host = window.location.hostname;
-            const res = await fetch(`http://${host}:3001/api/v1/frames/upload`, {
+            const res = await fetch(`/api/v1/frames/upload`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload)
