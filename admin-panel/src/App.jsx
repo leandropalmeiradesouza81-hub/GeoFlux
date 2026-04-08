@@ -38,8 +38,10 @@ export default function AdminPanel() {
       {/* Sidebar */}
       <aside className="admin-sidebar">
         <div className="admin-logo">
-          <div className="logo-box">G</div>
-          <span>GeoFlux Admin</span>
+          <div className="admin-branding">
+            <h1>Geo<span style={{position:'relative'}}>F<i style={{position:'absolute', left:'0', top:'1.1em', fontSize:'0.4em', fontStyle:'italic', color:'var(--primary)'}}>Maps</i></span>lux</h1>
+            <p>Admin Control Center</p>
+          </div>
         </div>
         <nav className="admin-nav">
           <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>

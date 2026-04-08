@@ -105,6 +105,22 @@ export default function App() {
   }, []);
 
   // 3. FETCH REAL HIVEMAPPER ROAD DATA
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    });
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') setDeferredPrompt(null);
+  };
+
   useEffect(() => {
     if (!pos || screen !== 'map') return;
     const fetchTiles = async () => {
@@ -300,6 +316,12 @@ export default function App() {
           <button className="btn-login-gradient" onClick={() => setScreen('map')}>
              INICIAR PLANTÃO
           </button>
+
+          {deferredPrompt && (
+            <button className="btn-install-app" onClick={handleInstallClick}>
+               📥 BAIXAR GEOFLUX APP
+            </button>
+          )}
           
           <div className="login-footer">
              <span>Esqueceu a senha?</span>
