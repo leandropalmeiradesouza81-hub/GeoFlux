@@ -136,34 +136,32 @@ class HivemapperService {
     }
   }
 
-  generateMockFreshness(lat, lon, radius) {
-    const tiles = [];
-    const step = 0.0016; // Hexágonos menores para parecerem "ruas"
+  generateMockFreshness(lat, lon) {
+    const segments = [];
+    const numSegments = 25;
     
-    for (let i = -15; i <= 15; i++) {
-      for (let j = -15; j <= 15; j++) {
-        const tLat = lat + (i * step);
-        const tLon = lon + (j * step);
-        
-        // Simular clusters de áreas de bônus (igual demanda no 99/Uber)
-        const cluster1 = Math.sqrt(Math.pow(i - 4, 2) + Math.pow(j - 4, 2));
-        const cluster2 = Math.sqrt(Math.pow(i + 5, 2) + Math.pow(j + 3, 2));
-        
-        // Se estiver perto de um centro de cluster, fica Stale (Verde)
-        const isStale = cluster1 < 4 || cluster2 < 3;
-        const daysSinceMapped = isStale ? 10 : 2; 
-        
-        tiles.push({
-          lat: tLat,
-          lon: tLon,
-          daysSinceMapped,
-          status: isStale ? 'stale' : 'fresh',
-          color: isStale ? '#00D4AA' : 'transparent', 
-          payout: isStale ? 'R$ 0,10/km' : 'R$ 0,00'
-        });
-      }
+    // Simular segmentos de rua em vez de hexágonos
+    for (let i = 0; i < numSegments; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const length = 0.003 + Math.random() * 0.005;
+      
+      const startLat = lat + (Math.random() - 0.5) * 0.02;
+      const startLon = lon + (Math.random() - 0.5) * 0.02;
+      
+      const endLat = startLat + Math.sin(angle) * length;
+      const endLon = startLon + Math.cos(angle) * length;
+      
+      const isReward = Math.random() > 0.4; // 60% das vias liberadas para ganho
+      
+      segments.push({
+        id: `seg_${i}`,
+        path: [[startLat, startLon], [endLat, endLon]],
+        status: isReward ? 'stale' : 'fresh',
+        color: isReward ? '#00D4AA' : 'transparent',
+        payout: isReward ? 'R$ 0,10/km' : 'R$ 0,00'
+      });
     }
-    return tiles;
+    return segments;
   }
 
   /**

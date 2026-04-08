@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Polygon, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { 
   Menu, X, Wallet, User, Play, Square, Wifi, Navigation, 
@@ -41,15 +41,6 @@ function MapRefresher({ center, isManual }) {
   }, [center, map, isManual]);
   return null;
 }
-
-const getHexBounds = (lat, lon, r = 0.0022) => {
-  const bounds = [];
-  for (let i = 0; i < 6; i++) {
-    const angle = (Math.PI / 3) * i + (Math.PI / 6);
-    bounds.push([lat + r * Math.sin(angle), lon + (r / Math.cos(lat * Math.PI / 180)) * Math.cos(angle)]);
-  }
-  return bounds;
-};
 
 export default function App() {
   const [screen, setScreen] = useState('login');
@@ -98,7 +89,7 @@ export default function App() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  // 3. FETCH TILES
+  // 3. FETCH TILES (SEGMENTS)
   useEffect(() => {
     if (!pos || screen !== 'map') return;
     const fetchTiles = async () => {
@@ -216,16 +207,25 @@ export default function App() {
         return (
           <main className="app-fullscreen-map">
             {pos ? (
-              <MapContainer center={pos} zoom={14} zoomControl={false} style={{ height: '100%', width: '100%' }}>
+              <MapContainer center={pos} zoom={18} zoomControl={false} style={{ height: '100%', width: '100%' }}>
                 <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
                 <MapEventsHandler onManualControl={setIsManualMapControl} />
-                {tiles.filter(t => t.status === 'stale').map((tile, idx) => (
-                  <Polygon 
+
+                {/* Road Painting - Caminhos liberados para ganho (Hivmapper Style) */}
+                {tiles.filter(t => t.status === 'stale').map((seg, idx) => (
+                  <Polyline 
                     key={idx}
-                    positions={getHexBounds(tile.lat, tile.lon, 0.002)}
-                    pathOptions={{ fillColor: '#00D4AA', fillOpacity: 0.1, color: '#00D4AA', weight: 0, className: 'heatmap-zone' }}
+                    positions={seg.path}
+                    pathOptions={{ 
+                      color: '#00D4AA', 
+                      weight: 12, 
+                      opacity: 0.7,
+                      lineCap: 'round',
+                      className: 'reward-road-path'
+                    }}
                   />
                 ))}
+
                 <Marker position={pos} icon={carIcon} />
                 <MapRefresher center={pos} isManual={isManualMapControl} />
               </MapContainer>
@@ -235,7 +235,7 @@ export default function App() {
 
             {isManualMapControl && (
               <button className="btn-recenter" onClick={() => setIsManualMapControl(false)}>
-                <LocateFixed size={20} /> Centralizar em mim
+                <LocateFixed size={20} /> Centralizar
               </button>
             )}
 
@@ -245,11 +245,11 @@ export default function App() {
             </div>
             
             <div className="map-hud-stats">
-               <div className="hud-card"><span>SALDO</span><strong>R$ {earnings.toFixed(2)}</strong></div>
+               <div className="hud-card"><span>GANHO</span><strong>R$ {earnings.toFixed(2)}</strong></div>
                <div className="hud-break"></div>
                <div className="hud-card"><span>KM VÁLIDO</span><strong>{(km).toFixed(2)} km</strong></div>
                <div className="hud-break"></div>
-               <div className="hud-card"><span>IA ACT</span><strong>{lastDetections.length > 0 ? lastDetections[0] : 'Idle'}</strong></div>
+               <div className="hud-card"><span>IA DET</span><strong>{lastDetections.length > 0 ? lastDetections[0] : 'Idle'}</strong></div>
             </div>
 
             <div className="map-slider-area">
