@@ -1,0 +1,18 @@
+{
+  "name": "GeoFlux Maps",
+  "short_name": "GeoFlux",
+  "description": "Plataforma Pro de Mapeamento Geossensorial Descentralizado",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0E1A",
+  "theme_color": "#00D4AA",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
