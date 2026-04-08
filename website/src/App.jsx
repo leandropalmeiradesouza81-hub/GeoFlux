@@ -1,53 +1,152 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-function App() {
-  const [openFaq, setOpenFaq] = useState(null);
-  const [mobileMenu, setMobileMenu] = useState(false);
+// --- Sub-Component: App Simulator (Visual Proof) ---
+function AppSimulator() {
+  const [screen, setScreen] = useState('login');
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [kilometers, setKilometers] = useState(124.5);
+  const [balance, setBalance] = useState(12.45);
 
-  const toggleFaq = (index) => {
-    setOpenFaq(openFaq === index ? null : index);
-  };
-
-  const faqs = [
-    {
-      q: 'Preciso comprar algum equipamento especial?',
-      a: 'Não! O GeoFlux funciona 100% com o seu smartphone. Basta instalar o app, posicionar o celular no suporte do carro e começar a dirigir. Sem custos de hardware.'
-    },
-    {
-      q: 'Como funciona o pagamento?',
-      a: 'Você recebe R$ 0,10 fixo por KM válido percorrido em áreas que precisam de mapeamento. O desempenho do motorista e a qualidade das imagens são validados pelos administradores no nosso painel. Quando validados, o saldo é atualizado automaticamente.'
-    },
-    {
-      q: 'O que é a plataforma GeoFlux e como a empresa ganha dinheiro?',
-      a: 'O GeoFlux atende a empresas de logística, prefeituras e serviços de IA que precisam de dados visuais atualizados das ruas. Quando seus dados são aceitos pelos nossos clientes corporativos através de APIs B2B, você recebe seu valor fixo por KM e o GeoFlux fica com a margem corporativa. Tudo de forma automática e transparente.'
-    },
-    {
-      q: 'Posso usar enquanto dirijo para Uber/99?',
-      a: 'Sim! O app funciona em segundo plano. Você inicia uma sessão de captura, posiciona o celular e pode alternar para o app da Uber, 99 ou qualquer outro. O GeoFlux continua capturando automaticamente.'
-    },
-    {
-      q: 'Os dados coletados são seguros e respeitam a privacidade?',
-      a: 'Sim. Todas as imagens passam por um processamento de privacidade no nosso servidor que desfoca automaticamente rostos e placas de veículos antes de enviar para a rede de mapeamento. Seus dados pessoais nunca são compartilhados.'
-    },
-    {
-      q: 'Quando o upload dos dados acontece?',
-      a: 'Os dados são armazenados localmente no celular durante o dia. Ao final do dia, quando você conectar ao Wi-Fi, o app sincroniza automaticamente tudo com nosso servidor. Sem gastar seus dados móveis.'
-    },
-    {
-      q: 'Preciso de internet o tempo todo?',
-      a: 'Não. O app captura os dados offline usando apenas GPS e câmera. A internet só é necessária no momento do upload via Wi-Fi, geralmente quando você chega em casa.'
+  useEffect(() => {
+    let interval;
+    if (isCapturing) {
+      interval = setInterval(() => {
+        setKilometers(k => k + 0.01);
+        setBalance(b => b + 0.001);
+      }, 1000);
     }
-  ];
+    return () => clearInterval(interval);
+  }, [isCapturing]);
+
+  return (
+    <div className="phone-wrapper">
+      <div className="phone-body">
+        <div className="phone-screen">
+          <div className="phone-header">
+            <span>17:55</span>
+            <div style={{display: 'flex', gap: '4px'}}>📶 🔋</div>
+          </div>
+
+          {screen === 'login' && (
+            <div className="app-screen login-anim">
+              <div className="app-logo">🌐</div>
+              <h2>GeoFlux Driver</h2>
+              <p>Rio de Janeiro</p>
+              <div className="app-inputs">
+                <input type="text" placeholder="E-mail" readOnly defaultValue="motorista@rio.com" />
+                <input type="password" placeholder="Senha" readOnly defaultValue="••••••••" />
+              </div>
+              <button className="btn-app-primary" onClick={() => setScreen('map')}>ACESSAR PAINEL</button>
+            </div>
+          )}
+
+          {screen === 'map' && (
+            <div className="app-screen map-anim">
+              <div className="map-interface">
+                <div className="car-cursor">▲</div>
+                {isCapturing && <div className="rec-indicator">GRAVANDO</div>}
+              </div>
+              <div className="map-stats">
+                  <div className="map-pill"><span>SALDO</span><strong>R$ {balance.toFixed(2)}</strong></div>
+                  <div className="map-pill"><span>DISTÂNCIA</span><strong>{kilometers.toFixed(2)} km</strong></div>
+              </div>
+              <div className="map-action">
+                <button className={`btn-capture ${isCapturing ? 'active' : ''}`} onClick={() => setIsCapturing(!isCapturing)}>
+                  {isCapturing ? 'Parar Coleta' : 'Iniciar Mapeamento'}
+                </button>
+                <div className="app-nav">
+                  <span className="active">🗺️</span>
+                  <span onClick={() => setScreen('wallet')}>💰</span>
+                  <span>👤</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {screen === 'wallet' && (
+            <div className="app-screen wallet-anim">
+              <div className="wallet-header">
+                 <h3>Minha Carteira</h3>
+                 <div className="big-balance">R$ {balance.toFixed(2)}</div>
+                 <p>{kilometers.toFixed(1)} km percorridos</p>
+              </div>
+              <div className="payout-area">
+                 <div className="pix-key"><span>CHAVE PIX</span><strong>leandro***@geoflux.com</strong></div>
+                 <button className="btn-app-secondary">SOLICITAR SAQUE</button>
+              </div>
+              <div className="app-nav">
+                  <span onClick={() => setScreen('map')}>🗺️</span>
+                  <span className="active">💰</span>
+                  <span>👤</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Main App Component ---
+function App() {
+  const [view, setView] = useState('landing'); // 'landing' or 'driver-app-access'
+
+  if (view === 'driver-app-access') {
+    return (
+       <div className="access-page">
+          <nav className="navbar glass">
+            <div className="navbar-inner">
+               <div className="navbar-logo" onClick={() => setView('landing')} style={{cursor: 'pointer'}}>
+                  <div className="logo-icon">🌐</div>
+                  <span className="text-gradient">GeoFlux</span>
+               </div>
+               <button className="btn btn-secondary" onClick={() => setView('landing')}>Voltar ao Site</button>
+            </div>
+          </nav>
+          
+          <div className="container center-content">
+             <div className="access-card glass-premium">
+                <div className="access-badge">Acesso Exclusivo</div>
+                <h1>Área do Motorista</h1>
+                <p>O GeoFlux funciona exclusivamente em dispositivos Android para garantir a precisão da telemetria e conexão com a câmera externa.</p>
+                
+                <div className="download-options">
+                   <div className="option">
+                      <div className="icon">📱</div>
+                      <div>
+                         <h3>Instalar App (APK)</h3>
+                         <p>Versão estável v0.4.0 • Android 12+</p>
+                      </div>
+                      <button className="btn btn-primary">Baixar APK</button>
+                   </div>
+                   <div className="option">
+                      <div className="icon">🔑</div>
+                      <div>
+                         <h3>Acesso Web (Preview)</h3>
+                         <p>Visualize seu saldo e histórico via navegador.</p>
+                      </div>
+                      <button className="btn btn-secondary" onClick={() => window.location.href='http://localhost:5173'}>Abrir Dashboard</button>
+                   </div>
+                </div>
+                
+                <div className="hardware-note">
+                   <strong>IMPORTANTE:</strong> Para validar seus KMs, sua <strong>Câmera Externa</strong> deve estar conectada ao Wi-Fi do smartphone durante toda a sessão.
+                </div>
+             </div>
+          </div>
+       </div>
+    );
+  }
 
   return (
     <>
-      {/* Background Effects */}
-      <div className="bg-grid" />
-      <div className="bg-glow-1" />
-      <div className="bg-glow-2" />
+      <div className="background-effects">
+        <div className="blur-blob purple" />
+        <div className="blur-blob cyan" />
+        <div className="grid-overlay" />
+      </div>
 
-      {/* Navbar */}
-      <nav className="navbar">
+      <nav className="navbar glass">
         <div className="navbar-inner">
           <a href="#" className="navbar-logo">
             <div className="logo-icon">🌐</div>
@@ -55,340 +154,88 @@ function App() {
           </a>
 
           <ul className="navbar-links">
-            <li><a href="#como-funciona">Como Funciona</a></li>
-            <li><a href="#beneficios">Benefícios</a></li>
-            <li><a href="#recompensas">Recompensas</a></li>
-            <li><a href="#pipeline">Tecnologia</a></li>
-            <li><a href="#faq">FAQ</a></li>
+            <li><a href="#proposta">Proposta</a></li>
+            <li><a href="#ganhos">Ganhos</a></li>
+            <li><a href="#hardware">Equipamento</a></li>
           </ul>
 
           <div className="navbar-cta">
-            <a href="#download" className="btn btn-secondary" id="nav-login-btn">Entrar</a>
-            <a href="#download" className="btn btn-primary" id="nav-download-btn">Baixar App</a>
+            <button className="btn btn-primary shadow-glow" onClick={() => setView('driver-app-access')}>Acesso Motorista</button>
           </div>
-
-          <button className="mobile-menu-btn" onClick={() => setMobileMenu(!mobileMenu)} aria-label="Menu">
-            ☰
-          </button>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="hero" id="hero">
-        <div className="container">
-          <div className="hero-content">
-            <div className="hero-badge">
-              <span className="dot" />
-              Rede ativa no Rio de Janeiro
-            </div>
-
-            <h1>
-              Mapeie o Rio.{' '}
-              <span className="highlight">Ganhe Recompensas.</span>
-            </h1>
-
+      <section className="hero">
+        <div className="container split">
+          <div className="hero-text-content">
+            <div className="hero-tag">Mapeamento Viário Rio de Janeiro</div>
+            <h1>Monetize seu trajeto diário <span className="highlight-alt">com precisão.</span></h1>
             <p>
-              Transforme seu smartphone em uma ferramenta de mapeamento.
-              Dirija normalmente, capture imagens das ruas em segundo plano
-              e ganhe dinheiro contribuindo para mapas globais descentralizados.
+              Transformamos motoristas em coletores de dados estratégicos. 
+              Mapeie ruas, detecte anomalias e receba por quilômetro percorrido em áreas prioritárias.
             </p>
-
-            <div className="hero-buttons">
-              <a href="#download" className="btn btn-primary btn-lg" id="hero-download-btn">
-                📱 Baixar o App Grátis
-              </a>
-              <a href="#como-funciona" className="btn btn-secondary btn-lg" id="hero-learn-btn">
-                Saiba Mais →
-              </a>
-            </div>
-
-            <div className="hero-stats">
-              <div className="hero-stat">
-                <div className="number">R$ 0,10</div>
-                <div className="label">por KM válido</div>
-              </div>
-              <div className="hero-stat">
-                <div className="number">0</div>
-                <div className="label">custo de hardware</div>
-              </div>
-              <div className="hero-stat">
-                <div className="number">24/7</div>
-                <div className="label">captura em segundo plano</div>
-              </div>
+            <div className="hero-actions">
+               <button className="btn btn-primary btn-lg" onClick={() => setView('driver-app-access')}>Começar a Ganhar</button>
+               <div className="earnings-preview">
+                  <strong>R$ 0,10 / km</strong>
+                  <span>Áreas com > 7 dias sem atualização</span>
+               </div>
             </div>
           </div>
-
-          <div className="hero-visual">
-            <div className="hero-globe" />
+          
+          <div className="hero-visual-content">
+             <AppSimulator />
           </div>
         </div>
       </section>
 
-      {/* How it Works */}
-      <section className="section" id="como-funciona">
+      <section className="section" id="ganhos">
         <div className="container">
-          <div className="section-header">
-            <div className="section-label">📋 Passo a Passo</div>
-            <h2 className="section-title">Como Funciona</h2>
-            <p className="section-subtitle">
-              Em 4 passos simples, comece a ganhar dinheiro mapeando o Rio de Janeiro
-              apenas com seu smartphone.
-            </p>
-          </div>
-
-          <div className="steps-grid">
-            <div className="step-card">
-              <div className="step-number">1</div>
-              <h3>Instale o App</h3>
-              <p>
-                Baixe o GeoFlux na Play Store e crie sua conta em menos de 2 minutos.
-                Não precisa de equipamento especial — só seu celular.
-              </p>
-            </div>
-
-            <div className="step-card">
-              <div className="step-number">2</div>
-              <h3>Posicione e Inicie</h3>
-              <p>
-                Coloque o celular no suporte do carro com a câmera voltada para a rua.
-                Toque em "Iniciar" e minimize o app. Pronto, pode dirigir normalmente.
-              </p>
-            </div>
-
-            <div className="step-card">
-              <div className="step-number">3</div>
-              <h3>Dirija e Mapeie</h3>
-              <p>
-                O app captura imagens e dados de GPS em segundo plano automaticamente.
-                Use Uber, 99 ou qualquer app enquanto mapeia. Sem interferência.
-              </p>
-            </div>
-
-            <div className="step-card">
-              <div className="step-number">4</div>
-              <h3>Sincronize e Ganhe</h3>
-              <p>
-                Ao conectar no Wi-Fi, os dados são enviados automaticamente.
-                Após validação, seu saldo é atualizado. Simples assim.
-              </p>
-            </div>
-          </div>
+           <div className="section-header">
+              <h2>Transparência nos <span className="highlight">Ganhos</span></h2>
+              <p>O GeoFlux utiliza um algoritmo de frescor para manter o mapa do Rio de Janeiro sempre atualizado.</p>
+           </div>
+           
+           <div className="feature-grid">
+              <div className="feature-card glass-card">
+                 <div className="feature-icon">📅</div>
+                 <h3>Regra dos 7 Dias</h3>
+                 <p>Cada vez que você passa por uma rua que não foi mapeada há mais de uma semana, o sistema valida seu ganho de <strong>R$ 0,10 por km</strong>.</p>
+              </div>
+              <div className="feature-card glass-card">
+                 <div className="feature-icon">💸</div>
+                 <h3>Saque PIX Instantâneo</h3>
+                 <p>Sem tokens complicados. Seu saldo é em Reais e o saque cai direto na sua conta cadastrada.</p>
+              </div>
+              <div className="feature-card glass-card">
+                 <div className="feature-icon">🛣️</div>
+                 <h3>Áreas Prioritárias</h3>
+                 <p>Consulte no mapa as zonas que precisam de atualização urgente e planeje sua rota para lucrar mais.</p>
+              </div>
+           </div>
         </div>
       </section>
 
-      {/* Benefits */}
-      <section className="section" id="beneficios">
-        <div className="container">
-          <div className="section-header">
-            <div className="section-label">✨ Vantagens</div>
-            <h2 className="section-title">Por que ser um GeoFluxer?</h2>
-            <p className="section-subtitle">
-              Renda extra sem investimento enquanto faz o que já faz todos os dias.
-            </p>
-          </div>
-
-          <div className="benefits-grid">
-            <div className="benefit-card">
-              <div className="benefit-icon green">💸</div>
-              <div>
-                <h3>Renda Passiva Real</h3>
-                <p>
-                  Ganhe R$ 0,10 por KM válido. Todo o seu envio será avaliado 
-                  e validado pela nossa administração antes do pagamento.
-                </p>
-              </div>
+      <section className="section" id="hardware">
+         <div className="container hardware-flex">
+            <div className="hardware-image glass-premium">
+               <div className="cam-mock">📷</div>
+               <div className="cam-signal">📡</div>
             </div>
-
-            <div className="benefit-card">
-              <div className="benefit-icon gold">📱</div>
-              <div>
-                <h3>Zero Investimento</h3>
-                <p>
-                  Sem dashcam, sem hardware especial. Seu smartphone é tudo
-                  que você precisa para começar a ganhar agora.
-                </p>
-              </div>
+            <div className="hardware-info">
+               <div className="section-label">Equipamento</div>
+               <h2>Câmera Externa & Sincronia</h2>
+               <p>Para garantir a qualidade das imagens exigida por nossos parceiros corporativos, o GeoFlux utiliza uma câmera externa Wi-Fi (Dashcam).</p>
+               <ul className="check-list">
+                  <li>✅ Captura em ângulo aberto (140º)</li>
+                  <li>✅ Sincronia automática via Wi-Fi Local</li>
+                  <li>✅ Sensor G-Force para detecção de buracos</li>
+                  <li>✅ Não consome o processamento do celular</li>
+               </ul>
             </div>
-
-            <div className="benefit-card">
-              <div className="benefit-icon purple">🔒</div>
-              <div>
-                <h3>Privacidade Garantida</h3>
-                <p>
-                  Todas as imagens passam por desfoque automático de rostos
-                  e placas antes de serem enviadas à rede de mapas.
-                </p>
-              </div>
-            </div>
-
-            <div className="benefit-card">
-              <div className="benefit-icon blue">🌐</div>
-              <div>
-                <h3>Impacto Global</h3>
-                <p>
-                  Seus dados ajudam a criar mapas descentralizados usados por
-                  empresas de mobilidade, entrega e veículos autônomos.
-                </p>
-              </div>
-            </div>
-
-            <div className="benefit-card">
-              <div className="benefit-icon green">⚡</div>
-              <div>
-                <h3>Economia de Dados</h3>
-                <p>
-                  Upload apenas via Wi-Fi. Sem consumir seus dados móveis.
-                  Imagens em WebP para ocupar o mínimo de espaço.
-                </p>
-              </div>
-            </div>
-
-            <div className="benefit-card">
-              <div className="benefit-icon gold">🏆</div>
-              <div>
-                <h3>Áreas Prioritárias</h3>
-                <p>
-                  O mapa mostra áreas com maior recompensa. Planeje suas
-                  corridas para maximizar seus ganhos.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+         </div>
       </section>
 
-      {/* Rewards */}
-      <section className="section" id="recompensas">
-        <div className="container">
-          <div className="section-header">
-            <div className="section-label">🍯 Smart Rewards</div>
-            <h2 className="section-title">Sistema de Pagamentos Justo</h2>
-            <p className="section-subtitle">
-              Sua rota do dia a dia se transforma em ganhos reais,
-              assegurados pela nossa plataforma mediante validação diária.
-            </p>
-          </div>
-
-          <div className="rewards-showcase">
-            <div className="reward-tiers">
-              <div className="tier">
-                <div className="tier-dot green" />
-                <div className="tier-info">
-                  <h4>🛣️ KM Válido & Aprovado</h4>
-                  <p>Dados devidamente aprovados no controle de qualidade</p>
-                </div>
-                <div className="tier-value">R$ 0,10 FIXO</div>
-              </div>
-
-              <div className="tier">
-                <div className="tier-dot red" />
-                <div className="tier-info">
-                  <h4>🚧 Em Avaliação</h4>
-                  <p>Início das operações de motorista (Avaliação de desempenho)</p>
-                </div>
-                <div className="tier-value">0 a 100%</div>
-              </div>
-            </div>
-
-            <div className="reward-visual">
-              <div className="honey-token">💵</div>
-              <div className="honey-label">Ganhos GeoFlux</div>
-              <div className="honey-sublabel">Sacáveis via PIX rapidamente</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pipeline */}
-      <section className="section" id="pipeline">
-        <div className="container">
-          <div className="section-header">
-            <div className="section-label">⚙️ Tecnologia</div>
-            <h2 className="section-title">Pipeline de Processamento</h2>
-            <p className="section-subtitle">
-              Do seu smartphone até o mapa global — cada frame passa por
-              um pipeline automatizado de qualidade e privacidade.
-            </p>
-          </div>
-
-          <div className="pipeline-flow">
-            <div className="pipeline-step">
-              <div className="icon">📱</div>
-              <div className="name">Captura</div>
-              <div className="desc">Câmera + GPS</div>
-            </div>
-            <div className="pipeline-arrow">→</div>
-            <div className="pipeline-step">
-              <div className="icon">📡</div>
-              <div className="name">Upload Wi-Fi</div>
-              <div className="desc">Sync automático</div>
-            </div>
-            <div className="pipeline-arrow">→</div>
-            <div className="pipeline-step">
-              <div className="icon">🔒</div>
-              <div className="name">Privacidade</div>
-              <div className="desc">Blur rostos/placas</div>
-            </div>
-            <div className="pipeline-arrow">→</div>
-            <div className="pipeline-step">
-              <div className="icon">✅</div>
-              <div className="name">Validação</div>
-              <div className="desc">Qualidade + GPS</div>
-            </div>
-            <div className="pipeline-arrow">→</div>
-            <div className="pipeline-step">
-              <div className="icon">🏆</div>
-              <div className="name">Ganhos GeoFlux</div>
-              <div className="desc">Recompensa BRL</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="section" id="faq">
-        <div className="container">
-          <div className="section-header">
-            <div className="section-label">❓ Perguntas Frequentes</div>
-            <h2 className="section-title">Tire suas Dúvidas</h2>
-          </div>
-
-          <div className="faq-list">
-            {faqs.map((faq, i) => (
-              <div key={i} className={`faq-item ${openFaq === i ? 'open' : ''}`} id={`faq-item-${i}`}>
-                <button className="faq-question" onClick={() => toggleFaq(i)}>
-                  {faq.q}
-                  <span className="faq-chevron">▼</span>
-                </button>
-                <div className="faq-answer">{faq.a}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="cta-section" id="download">
-        <div className="container">
-          <div className="cta-card">
-            <h2>Comece a Mapear <span className="highlight">Agora</span></h2>
-            <p>
-              Junte-se à rede de mapeamento descentralizado do Rio de Janeiro.
-              Sem custos, sem complicação. Só você, seu celular e a estrada.
-            </p>
-            <div className="cta-buttons">
-              <a href="#" className="btn btn-accent btn-lg" id="cta-download-btn">
-                📱 Baixar para Android
-              </a>
-              <a href="#" className="btn btn-secondary btn-lg" id="cta-dashboard-btn">
-                🖥️ Acessar Dashboard
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
       <footer className="footer">
         <div className="container">
           <div className="footer-grid">
