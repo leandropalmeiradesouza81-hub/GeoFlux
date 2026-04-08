@@ -150,7 +150,7 @@ function App() {
         <div className="navbar-inner">
           <a href="#" className="navbar-logo">
             <div className="logo-icon">🌐</div>
-            <span className="text-gradient">GeoF<span className="logo-f-container">lux<br/><i className="logo-maps-italic">Maps</i></span></span>
+            <span className="text-gradient">Geo<span className="logo-f-container">F<i className="logo-maps-italic">Maps</i></span>lux</span>
           </a>
 
           <ul className="navbar-links">
@@ -240,10 +240,10 @@ function App() {
         <div className="container">
           <div className="footer-grid">
             <div className="footer-brand">
-              <a href="#" className="navbar-logo">
-                <div className="logo-icon">🌐</div>
-                <span className="text-gradient">GeoFlux</span>
-              </a>
+               <a href="#" className="navbar-logo">
+                 <div className="logo-icon">🌐</div>
+                 <span className="text-gradient">Geo<span className="logo-f-container">F<i className="logo-maps-italic">Maps</i></span>lux</span>
+               </a>
               <p>
                 Plataforma DePIN de coleta de dados geoespaciais
                 descentralizada para o Rio de Janeiro. Contribua

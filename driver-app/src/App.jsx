@@ -282,7 +282,7 @@ export default function App() {
         <div className="login-form-container">
           <div className="login-brand">
              <div className="brand-logo-glow">G</div>
-             <h1>GeoF<span className="logo-f-container">lux<br/><i className="logo-maps-italic">Maps</i></span></h1>
+             <h1>Geo<span className="logo-f-anchor">F<i className="logo-maps-italic">Maps</i></span>lux</h1>
              <p>DRIVER REWARDS</p>
           </div>
           
@@ -317,7 +317,7 @@ export default function App() {
             <Menu size={26} strokeWidth={2.5} />
          </button>
          <div className="nav-logo-right">
-            GeoF<span className="logo-f-container">lux<br/><i className="logo-maps-italic">Maps</i></span>
+            Geo<span className="logo-f-anchor">F<i className="logo-maps-italic">Maps</i></span>lux
          </div>
       </header>
 
