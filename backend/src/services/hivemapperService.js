@@ -140,23 +140,26 @@ class HivemapperService {
     const tiles = [];
     const step = 0.0016; // Hexágonos menores para parecerem "ruas"
     
-    for (let i = -8; i <= 8; i++) {
-      for (let j = -8; j <= 8; j++) {
+    for (let i = -15; i <= 15; i++) {
+      for (let j = -15; j <= 15; j++) {
         const tLat = lat + (i * step);
         const tLon = lon + (j * step);
         
-        // Simulação: Áreas com distâncias específicas formam "linhas" (estradas)
-        // Usamos um ruído determinístico para simular frescor
-        const pattern = Math.sin(i * 0.5) * Math.cos(j * 0.5);
-        const daysSinceMapped = pattern > 0.3 ? 10 : 3; 
+        // Simular clusters de áreas de bônus (igual demanda no 99/Uber)
+        const cluster1 = Math.sqrt(Math.pow(i - 4, 2) + Math.pow(j - 4, 2));
+        const cluster2 = Math.sqrt(Math.pow(i + 5, 2) + Math.pow(j + 3, 2));
+        
+        // Se estiver perto de um centro de cluster, fica Stale (Verde)
+        const isStale = cluster1 < 4 || cluster2 < 3;
+        const daysSinceMapped = isStale ? 10 : 2; 
         
         tiles.push({
           lat: tLat,
           lon: tLon,
           daysSinceMapped,
-          status: daysSinceMapped >= 7 ? 'stale' : 'fresh',
-          color: daysSinceMapped >= 7 ? '#00D4AA' : '#FF9F43', // Verde vs Laranja
-          payout: daysSinceMapped >= 7 ? 'R$ 0,10/km' : 'R$ 0,00'
+          status: isStale ? 'stale' : 'fresh',
+          color: isStale ? '#00D4AA' : 'transparent', 
+          payout: isStale ? 'R$ 0,10/km' : 'R$ 0,00'
         });
       }
     }

@@ -112,22 +112,25 @@ h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 8
 .app-navbar-translucent {
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 80px;
+  height: 90px;
   padding: 40px 20px 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 100;
-  background: linear-gradient(rgba(10,14,26,0.8), transparent);
+  z-index: 5000; /* Super high to clear Leaflet */
+  background: linear-gradient(to bottom, rgba(10,14,26,0.95) 0%, transparent 100%);
+  pointer-events: none; /* Allow interaction with map unless clicking buttons */
 }
 
-.nav-logo { font-weight: 800; font-size: 1.3rem; letter-spacing: -1px; color: var(--text-main); }
+.nav-logo { font-weight: 800; font-size: 1.4rem; letter-spacing: -1.2px; color: var(--primary); pointer-events: auto; }
 .btn-icon-nav {
-  background: var(--bg-glass);
-  width: 44px; height: 44px;
+  pointer-events: auto; 
+  background: var(--bg-surface);
+  width: 48px; height: 48px;
   display: flex; align-items: center; justify-content: center;
-  border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px; border: 1px solid rgba(255,255,255,0.15);
   color: white; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 /* FULLSCREEN MAP */
@@ -142,11 +145,17 @@ h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 8
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 .car-marker-core {
-  font-size: 2.2rem;
-  color: var(--primary);
-  filter: drop-shadow(0 0 10px var(--primary-glow));
+  font-size: 2.5rem;
+  color: #1a1e36;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
   width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center;
+  transform: rotate(0deg);
+}
+
+.heatmap-zone {
+  filter: blur(8px);
+  transition: all 0.5s ease;
 }
 
 .map-tile-hex { transition: fill-opacity 0.3s; }
@@ -258,6 +267,38 @@ h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 8
 .menu-stat-card .label { font-size: 0.65rem; color: var(--text-dim); display: block; margin-bottom: 8px; }
 .menu-stat-card .value { font-size: 1.1rem; font-weight: 800; }
 .menu-stat-card .value.primary { color: var(--primary); }
+
+/* AUDIT SECTION */
+.menu-audit-section {
+  margin-bottom: 32px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px dashed rgba(255,255,255,0.1);
+}
+
+.menu-audit-section header {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.proof-list { display: flex; flex-direction: column; gap: 8px; }
+.proof-item {
+  font-family: monospace;
+  font-size: 0.65rem;
+  background: rgba(255,255,255,0.02);
+  padding: 8px;
+  border-radius: 6px;
+}
+.p-hash { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; }
+.p-meta { display: flex; justify-content: space-between; margin-top: 4px; }
+.p-status { color: var(--primary); font-weight: 800; }
+.no-proofs { font-size: 0.7rem; color: var(--text-dim); text-align: center; font-style: italic; }
 
 /* MENU LINKS */
 .menu-nav-links { display: flex; flex-direction: column; gap: 8px; }
