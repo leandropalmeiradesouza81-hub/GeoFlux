@@ -58,24 +58,39 @@ export default function App() {
   const [lastDetections, setLastDetections] = useState([]);
   const videoRef = useRef(null);
 
-  // 1. CAMERA ACCESS
+  // 1. CAMERA ACCESS (ULTRA-RESILIENT)
   useEffect(() => {
     async function setupCamera() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'environment' },
-          audio: false 
-        });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+        const constraints = [
+          { video: { facingMode: { exact: 'environment' } }, audio: false },
+          { video: { facingMode: 'environment' }, audio: false },
+          { video: true, audio: false }
+        ];
+
+        let stream;
+        for (const constraint of constraints) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia(constraint);
+            if (stream) break;
+          } catch (e) {
+            console.warn("Constraint failed:", constraint);
+          }
         }
-        setCameraActive(true);
+
+        if (stream) {
+          if (videoRef.current) videoRef.current.srcObject = stream;
+          setCameraActive(true);
+          setCameraError(null);
+        } else {
+          throw new Error("Não foi possível acessar nenhuma câmera.");
+        }
       } catch (err) {
-        setCameraError("Câmera não detectada.");
+        setCameraError("Câmera bloqueada. Permita o acesso nas configurações do navegador.");
         setCameraActive(false);
       }
     }
-    if (screen === 'map') setupCamera();
+    if (screen === 'map' || screen === 'login') setupCamera();
   }, [screen]);
 
   // 2. GEOLOCATION
@@ -89,7 +104,7 @@ export default function App() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  // 3. FETCH TILES (SEGMENTS)
+  // 3. FETCH REAL HIVEMAPPER ROAD DATA
   useEffect(() => {
     if (!pos || screen !== 'map') return;
     const fetchTiles = async () => {
@@ -101,9 +116,11 @@ export default function App() {
       } catch (err) {}
     };
     fetchTiles();
+    const interval = setInterval(fetchTiles, 30000); // 30s update
+    return () => clearInterval(interval);
   }, [pos, screen]);
 
-  // 4. CAPTURE LOGIC & AI UPLOAD (5 seconds)
+  // 4. CAPTURE & UPLOAD (FOR HONEY REWARDS)
   useEffect(() => {
     let interval;
     if (isCapturing && cameraActive) {
@@ -117,13 +134,15 @@ export default function App() {
           canvas.height = videoRef.current.videoHeight;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(videoRef.current, 0, 0);
-          const frameData = canvas.toDataURL('image/webp', 0.5);
+          const frameData = canvas.toDataURL('image/webp', 0.6);
 
           const payload = {
             latitude: pos[0],
             longitude: pos[1],
             timestamp: new Date().toISOString(),
-            image: frameData
+            image: frameData,
+            precision: 1.0, // GPS Precision
+            speed: 40 // Simulated speed
           };
 
           try {
@@ -134,15 +153,8 @@ export default function App() {
               body: JSON.stringify(payload)
             });
             const result = await res.json();
-            
             if (result.success && result.detections) {
               setLastDetections(prev => [...result.detections, ...prev].slice(0, 3));
-              setProofs(prev => [{
-                id: Math.random().toString(36).substr(2, 5),
-                hash: 'AI_DET_' + result.frameId.substr(0, 6).toUpperCase(),
-                time: new Date().toLocaleTimeString(),
-                status: 'UPLOADED'
-              }, ...prev.slice(0, 3)]);
             }
           } catch (err) {}
         }
@@ -156,7 +168,7 @@ export default function App() {
     setSliderValue(val);
     if (val > 80) {
       if (!cameraActive) {
-        alert("Câmera obrigatória!");
+        alert("Câmera é obrigatória para ganhar recompensas!");
         setSliderValue(0);
         return;
       }
@@ -176,30 +188,11 @@ export default function App() {
                 <div />
              </header>
              <div className="wallet-card">
-                <span>Saldo Disponível</span>
+                <span>Saldo HONEY Acumulado</span>
                 <h1>R$ {earnings.toFixed(2)}</h1>
-                <p>Pagamentos diários automáticos</p>
+                <p>Equivalente Digital • Pagamento Solana</p>
              </div>
-             <button className="btn-withdraw">SAQUE PIX AGORA</button>
-          </div>
-        );
-      case 'history':
-        return (
-          <div className="sub-screen">
-             <header className="sub-header">
-                <button onClick={() => setScreen('map')}><ChevronRight style={{transform: 'rotate(180deg)'}} /></button>
-                <h2>Histórico de Coleta</h2>
-                <div />
-             </header>
-             <div className="history-list">
-                <div className="hist-item">
-                   <Navigation size={20} />
-                   <div className="hist-meta">
-                      <strong>Rio de Janeiro - Região Central</strong>
-                      <span>{km.toFixed(1)} km hoje • R$ {earnings.toFixed(2)}</span>
-                   </div>
-                </div>
-             </div>
+             <button className="btn-withdraw">RESGATAR PARA PHANTOM</button>
           </div>
         );
       case 'map':
@@ -211,15 +204,15 @@ export default function App() {
                 <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
                 <MapEventsHandler onManualControl={setIsManualMapControl} />
 
-                {/* Road Painting - Caminhos liberados para ganho (Hivmapper Style) */}
+                {/* Pintura de Ruas Real (Hivemapper Pattern) */}
                 {tiles.filter(t => t.status === 'stale').map((seg, idx) => (
                   <Polyline 
                     key={idx}
                     positions={seg.path}
                     pathOptions={{ 
                       color: '#00D4AA', 
-                      weight: 12, 
-                      opacity: 0.7,
+                      weight: 15, 
+                      opacity: 0.8,
                       lineCap: 'round',
                       className: 'reward-road-path'
                     }}
@@ -230,33 +223,34 @@ export default function App() {
                 <MapRefresher center={pos} isManual={isManualMapControl} />
               </MapContainer>
             ) : (
-              <div className="map-init-loader">Localizando...</div>
+              <div className="map-init-loader">Localizando GPS...</div>
             )}
 
             {isManualMapControl && (
               <button className="btn-recenter" onClick={() => setIsManualMapControl(false)}>
-                <LocateFixed size={20} /> Centralizar
+                <LocateFixed size={18} /> Centralizar
               </button>
             )}
 
+            {/* Camera PIP HUD */}
             <div className={`camera-pip ${cameraActive ? 'active' : 'error'}`}>
                <video ref={videoRef} autoPlay playsInline muted />
                {!cameraActive && <AlertCircle size={20} />}
             </div>
             
             <div className="map-hud-stats">
-               <div className="hud-card"><span>GANHO</span><strong>R$ {earnings.toFixed(2)}</strong></div>
+               <div className="hud-card"><span>RECOMPENSA</span><strong style={{color: '#00D4AA'}}>R$ {earnings.toFixed(2)}</strong></div>
                <div className="hud-break"></div>
-               <div className="hud-card"><span>KM VÁLIDO</span><strong>{(km).toFixed(2)} km</strong></div>
+               <div className="hud-card"><span>KM VÁLIDO</span><strong>{km.toFixed(2)} km</strong></div>
                <div className="hud-break"></div>
-               <div className="hud-card"><span>IA DET</span><strong>{lastDetections.length > 0 ? lastDetections[0] : 'Idle'}</strong></div>
+               <div className="hud-card"><span>IA SENSOR</span><strong>{lastDetections[0] || 'Ativo'}</strong></div>
             </div>
 
             <div className="map-slider-area">
-                {!cameraActive && <div className="cam-warning">Câmera necessária para monitorar</div>}
+                {cameraError && <div className="cam-warning">{cameraError}</div>}
                 <div className={`slider-track ${isCapturing ? 'active' : ''} ${!cameraActive ? 'disabled' : ''}`}>
                    <div className="slider-label">
-                      {isCapturing ? 'DESLIZE PARA PARAR' : 'DESLIZE PARA INICIAR'}
+                      {isCapturing ? 'DESLIZE PARA PARAR' : 'DESLIZE PARA GANHAR'}
                    </div>
                    <input type="range" min="0" max="100" value={sliderValue} 
                       onChange={handleSlider} onMouseUp={() => setSliderValue(0)} onTouchEnd={() => setSliderValue(0)}
@@ -267,7 +261,12 @@ export default function App() {
                 </div>
             </div>
 
-            {isCapturing && <div className="rec-indicator-dot"></div>}
+            {isCapturing && (
+              <div className="status-recording">
+                <div className="rec-dot"></div>
+                <span>COLETANDO DADOS</span>
+              </div>
+            )}
           </main>
         );
     }
@@ -281,13 +280,13 @@ export default function App() {
           <div className="login-brand">
              <div className="brand-logo-glow">G</div>
              <h1>GeoFlux</h1>
-             <p>DRIVER PLATFORM</p>
+             <p>DRIVER REWARDS</p>
           </div>
           
           <div className="login-inputs">
              <div className="input-group">
-                <label>E-MAIL DO MOTORISTA</label>
-                <input type="email" placeholder="ex: leandro@geoflux.com.br" />
+                <label>E-MAIL CADASTRADO</label>
+                <input type="email" placeholder="motorista@geoflux.com.br" />
              </div>
              <div className="input-group">
                 <label>SENHA DE ACESSO</label>
@@ -296,12 +295,12 @@ export default function App() {
           </div>
 
           <button className="btn-login-gradient" onClick={() => setScreen('map')}>
-             ENTRAR NO SISTEMA
+             INICIAR PLANTÃO
           </button>
           
           <div className="login-footer">
              <span>Esqueceu a senha?</span>
-             <span>Suporte GeoFlux</span>
+             <span>Suporte 24h</span>
           </div>
         </div>
       </div>
@@ -319,38 +318,36 @@ export default function App() {
 
       {renderContent()}
 
+      {/* Side Menu */}
       <div className={`app-side-menu ${menuOpen ? 'open' : ''}`}>
          <div className="menu-backdrop" onClick={() => setMenuOpen(false)}></div>
          <div className="menu-content-glass">
             <header className="menu-header">
                <div className="user-profile">
                   <div className="u-avatar">LP</div>
-                  <div className="u-meta"><h3>Leandro Palmeira</h3><span>Motorista • Rio</span></div>
+                  <div className="u-meta"><h3>{screen === 'login' ? 'Login' : 'Leandro Palmeira'}</h3><span>Motorista Fleet #882</span></div>
                </div>
                <button className="btn-close-menu" onClick={() => setMenuOpen(false)}><X size={24} /></button>
             </header>
             <div className="menu-scroll-area">
                <div className="menu-balance-pill">
-                  <span>SALDO ACUMULADO</span>
+                  <span>GANHOS HOJE</span>
                   <strong>R$ {earnings.toFixed(2)}</strong>
                </div>
                <nav className="menu-nav-links">
                   <div className="menu-link-item" onClick={() => { setScreen('wallet'); setMenuOpen(false); }}>
-                     <CreditCard size={20} /><span>Carteira & Saques</span>
+                     <CreditCard size={20} /><span>Carteira Solana</span>
                   </div>
                   <div className="menu-link-item" onClick={() => { setScreen('history'); setMenuOpen(false); }}>
-                     <History size={20} /><span>Histórico de Coleta</span>
+                     <History size={20} /><span>Minhas Rotas</span>
                   </div>
                   <div className="menu-link-item" onClick={() => setScreen('login')}><LogOut size={20} /><span>Sair</span></div>
                </nav>
                <section className="menu-audit-section">
-                  <header>INTELIGÊNCIA ARTIFICIAL (LOG)</header>
+                  <header><Zap size={14} /> HIvemapper AI LOG</header>
                   <div className="proof-list">
                      {lastDetections.map((d, i) => (
                         <div key={i} className="proof-item" style={{color: '#00D4AA'}}>Detectado: {d}</div>
-                     ))}
-                     {proofs.map(p => (
-                        <div key={p.id} className="proof-item">{p.hash} • {p.time}</div>
                      ))}
                   </div>
                </section>
