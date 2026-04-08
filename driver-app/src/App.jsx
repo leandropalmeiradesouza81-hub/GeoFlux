@@ -275,11 +275,34 @@ export default function App() {
 
   if (screen === 'login') {
     return (
-      <div className="app-container login-bg">
-        <div className="login-glass">
-          <h1>GeoFlux</h1>
-          <p>Plataforma Inteligente de Mapeamento</p>
-          <button className="btn-primary-app" onClick={() => setScreen('map')}>ACESSAR SISTEMA</button>
+      <div className="app-container login-screen-premium">
+        <div className="login-overlay"></div>
+        <div className="login-form-container">
+          <div className="login-brand">
+             <div className="brand-logo-glow">G</div>
+             <h1>GeoFlux</h1>
+             <p>DRIVER PLATFORM</p>
+          </div>
+          
+          <div className="login-inputs">
+             <div className="input-group">
+                <label>E-MAIL DO MOTORISTA</label>
+                <input type="email" placeholder="ex: leandro@geoflux.com.br" />
+             </div>
+             <div className="input-group">
+                <label>SENHA DE ACESSO</label>
+                <input type="password" placeholder="••••••••" />
+             </div>
+          </div>
+
+          <button className="btn-login-gradient" onClick={() => setScreen('map')}>
+             ENTRAR NO SISTEMA
+          </button>
+          
+          <div className="login-footer">
+             <span>Esqueceu a senha?</span>
+             <span>Suporte GeoFlux</span>
+          </div>
         </div>
       </div>
     );
