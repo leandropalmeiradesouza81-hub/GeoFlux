@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Polygon, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { 
   Menu, X, Wallet, User, Play, Square, Wifi, Navigation, 
@@ -245,16 +245,16 @@ export default function App() {
                 />
                 <MapEventsHandler onManualControl={setIsManualMapControl} />
 
-                {/* Hexágonos H3 de Cobertura (Hivemapper Pattern) */}
+                {/* Pintura de Ruas Real (Hivemapper Pattern) */}
                 {tiles.filter(t => t.status === 'stale').map((seg, idx) => (
-                  <Polygon 
+                  <Polyline 
                     key={idx}
                     positions={seg.path}
                     pathOptions={{ 
                       color: '#00D4AA', 
-                      fillColor: '#00D4AA',
-                      fillOpacity: 0.3,
-                      weight: 2,
+                      weight: 12, 
+                      opacity: 0.8,
+                      lineCap: 'round',
                       className: 'reward-road-path'
                     }}
                   />

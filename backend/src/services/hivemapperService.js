@@ -22,29 +22,35 @@ class HivemapperService {
 
   async getRegionFreshness(lat, lon) {
     const segments = [];
-    const originH3 = h3.latLngToCell(lat, lon, this.h3Resolution);
+    const step = 0.002; // Grid mais denso de ruas
     
-    // Obter hexágonos vizinhos (k-ring 4 para cobrir uma boa área)
-    const neighbors = h3.gridDisk(originH3, 4);
+    // Gerar um grid de ruas "Pintadas" (Road Painting)
+    for (let i = -8; i <= 8; i++) {
+      for (let j = -8; j <= 8; j++) {
+        const sLat = Math.round(lat / step) * step + (i * step);
+        const sLon = Math.round(lon / step) * step + (j * step);
+        
+        // Simulação de Frescor: 0 (Fresh/Blue) a 100 (Stale/Green)
+        const freshnessScore = Math.abs(Math.sin(sLat * 1000) * Math.cos(sLon * 1000));
+        const isStale = freshnessScore > 0.6; // Ruas disponíveis para ganhar HONEY
 
-    neighbors.forEach(hIndex => {
-      // Lógica de Frescor: Simulamos o status baseado no hash do índice
-      // Em produção, aqui consultaríamos a API Bee Maps: GET /v1/coverage/tile/{hIndex}
-      const hash = parseInt(hIndex.substring(10), 16);
-      const isStale = hash % 3 === 0; // Simulando 33% de áreas precisando de mapeamento
-
-      if (isStale) {
-        // Obter os limites do hexágono para desenhar no mapa
-        const boundaries = h3.cellToBoundary(hIndex);
-        segments.push({
-          id: hIndex,
-          path: boundaries, // Array de [lat, lon]
-          status: 'stale',
-          payout: '0.12 HONEY/km',
-          h3_index: hIndex
-        });
+        if (isStale) {
+          // Criar segmentos horizontais e verticais (Grid Urbano)
+          segments.push({
+            id: `road_h_${i}_${j}`,
+            path: [[sLat, sLon], [sLat, sLon + step]],
+            status: 'stale',
+            payout: '0.12 HONEY/km'
+          });
+          segments.push({
+            id: `road_v_${i}_${j}`,
+            path: [[sLat, sLon], [sLat + step, sLon]],
+            status: 'stale',
+            payout: '0.12 HONEY/km'
+          });
+        }
       }
-    });
+    }
 
     return segments;
   }
