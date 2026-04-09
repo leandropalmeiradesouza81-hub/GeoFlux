@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polygon, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { 
   Menu, X, Wallet, User, Play, Square, Wifi, Navigation, 
@@ -97,8 +97,15 @@ export default function App() {
   useEffect(() => {
     if (!navigator.geolocation) return;
     const watchId = navigator.geolocation.watchPosition(
-      (position) => setPos([position.coords.latitude, position.coords.longitude]),
-      (err) => { if (!pos) setPos([-22.9719, -43.1843]); },
+      (position) => {
+        setPos({
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+          speed: position.coords.speed,
+          accuracy: position.coords.accuracy
+        });
+      },
+      (err) => { if (!pos) setPos({ lat: -22.9719, lon: -43.1843, speed: 0, accuracy: 10 }); },
       { enableHighAccuracy: true, maximumAge: 0 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
@@ -125,26 +132,42 @@ export default function App() {
     if (!pos || screen !== 'map') return;
     const fetchTiles = async () => {
       try {
-        const host = window.location.hostname;
-        const res = await fetch(`/api/v1/tiles/freshness?lat=${pos[0]}&lon=${pos[1]}`);
+        const res = await fetch(`/api/v1/tiles/freshness?lat=${pos.lat}&lon=${pos.lon}`);
         const result = await res.json();
         if (result.success) setTiles(result.data);
       } catch (err) {}
     };
     fetchTiles();
-    const interval = setInterval(fetchTiles, 30000); // 30s update
+    const interval = setInterval(fetchTiles, 30000); 
     return () => clearInterval(interval);
-  }, [pos, screen]);
+  }, [pos.lat, pos.lon, screen]);
 
   // 4. CAPTURE & UPLOAD (FOR HONEY REWARDS)
   useEffect(() => {
     let interval;
-    if (isCapturing && cameraActive) {
+    if (isCapturing && cameraActive && pos) {
       interval = setInterval(async () => {
+        // Obter velocidade real do GPS (m/s para km/h: * 3.6)
+        const currentSpeed = pos.speed ? pos.speed * 3.6 : 0;
+        
+        // Regra 1: Apenas se estiver em movimento (> 2km/h)
+        if (currentSpeed < 2) return;
+
+        // Regra 2: Apenas se estiver em uma rua verde (stale)
+        const isStaleArea = tiles.some(tile => {
+          if (!tile.path || tile.path.length < 2) return false;
+          // Cálculo simples de proximidade ao segmento de reta
+          const dist = L.latLng(pos.lat, pos.lon).distanceTo(L.latLng(tile.path[0][0], tile.path[0][1]));
+          return dist < 100; // Reduzido para 100 metros para precisão de rua
+        });
+
+        if (!isStaleArea) return;
+
+        // Se passar nas regras, procede com a captura
         setKm(prev => prev + 0.012);
         setEarnings(prev => prev + (0.012 * 0.10));
 
-        if (videoRef.current && pos) {
+        if (videoRef.current) {
           const canvas = document.createElement('canvas');
           canvas.width = videoRef.current.videoWidth;
           canvas.height = videoRef.current.videoHeight;
@@ -153,16 +176,15 @@ export default function App() {
           const frameData = canvas.toDataURL('image/webp', 0.6);
 
           const payload = {
-            latitude: pos[0],
-            longitude: pos[1],
+            latitude: pos.lat,
+            longitude: pos.lon,
             timestamp: new Date().toISOString(),
             image: frameData,
-            precision: 1.0, // GPS Precision
-            speed: 40 // Simulated speed
+            precision: pos.accuracy || 1.0,
+            speed: currentSpeed
           };
 
           try {
-            const host = window.location.hostname;
             const res = await fetch(`/api/v1/frames/upload`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -177,7 +199,7 @@ export default function App() {
       }, 5000);
     }
     return () => clearInterval(interval);
-  }, [isCapturing, cameraActive, pos]);
+  }, [isCapturing, cameraActive, pos, tiles]);
 
   const handleSlider = (e) => {
     const val = parseInt(e.target.value);
@@ -216,30 +238,30 @@ export default function App() {
         return (
           <main className="app-fullscreen-map">
             {pos ? (
-              <MapContainer center={pos} zoom={18} zoomControl={false} style={{ height: '100%', width: '100%' }}>
+              <MapContainer center={[pos.lat, pos.lon]} zoom={18} zoomControl={false} style={{ height: '100%', width: '100%' }}>
                 <TileLayer 
                   url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" 
                   attribution="" 
                 />
                 <MapEventsHandler onManualControl={setIsManualMapControl} />
 
-                {/* Pintura de Ruas Real (Hivemapper Pattern) */}
+                {/* Hexágonos H3 de Cobertura (Hivemapper Pattern) */}
                 {tiles.filter(t => t.status === 'stale').map((seg, idx) => (
-                  <Polyline 
+                  <Polygon 
                     key={idx}
                     positions={seg.path}
                     pathOptions={{ 
                       color: '#00D4AA', 
-                      weight: 15, 
-                      opacity: 0.8,
-                      lineCap: 'round',
+                      fillColor: '#00D4AA',
+                      fillOpacity: 0.3,
+                      weight: 2,
                       className: 'reward-road-path'
                     }}
                   />
                 ))}
 
-                <Marker position={pos} icon={carIcon} />
-                <MapRefresher center={pos} isManual={isManualMapControl} />
+                <Marker position={[pos.lat, pos.lon]} icon={carIcon} />
+                <MapRefresher center={[pos.lat, pos.lon]} isManual={isManualMapControl} />
               </MapContainer>
             ) : (
               <div className="map-init-loader">Localizando GPS...</div>
