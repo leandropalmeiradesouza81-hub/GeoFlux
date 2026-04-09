@@ -11,25 +11,43 @@ import './index.css';
 export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState('integrations');
   const [logs, setLogs] = useState([]);
-  const [stats, setStats] = useState({ honey: 1245.8, mapillary: 8522, natix: 450 });
+  const [stats, setStats] = useState({ honey: 0, mapillary: 0, natix: 0, totalFrames: 0 });
 
-  // Simular recebimento de dados em tempo real
+  // Buscar dados reais do backend
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newLog = {
-        id: Math.random().toString(36).substr(2, 6).toUpperCase(),
-        time: new Date().toLocaleTimeString(),
-        driver: "Leandro P.",
-        location: "Rio de Janeiro, RJ",
-        status: "Ingested",
-        platforms: {
-          hivemapper: Math.random() > 0.1 ? 'success' : 'pending',
-          mapillary: Math.random() > 0.2 ? 'success' : 'pending',
-          natix: Math.random() > 0.3 ? 'success' : 'pending'
+    const fetchData = async () => {
+      try {
+        const statsRes = await fetch('/api/v1/admin/stats');
+        const statsData = await statsRes.json();
+        if (statsData.success) {
+          setStats({
+            honey: statsData.data.hivemapperRewards,
+            mapillary: statsData.data.mapillarySequences,
+            natix: statsData.data.natixPoints,
+            totalFrames: statsData.data.totalFrames
+          });
         }
-      };
-      setLogs(prev => [newLog, ...prev].slice(0, 10));
-    }, 4000);
+
+        const logsRes = await fetch('/api/v1/admin/recent-frames');
+        const logsData = await logsRes.json();
+        if (logsData.success) {
+          setLogs(logsData.data.map(l => ({
+            ...l,
+            time: new Date().toLocaleTimeString(),
+            platforms: {
+              hivemapper: l.status_hm === 'done' ? 'success' : 'pending',
+              mapillary: l.status_mpl === 'done' ? 'success' : 'pending',
+              natix: l.status_ntx === 'done' ? 'success' : 'pending'
+            }
+          })));
+        }
+      } catch (err) {
+        console.error("Erro ao buscar dados do Admin:", err);
+      }
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -85,7 +103,7 @@ export default function AdminPanel() {
                       <span className="p-badge solana">Solana / Honey</span>
                    </div>
                    <div className="p-stats">
-                      <div className="s-item"><span>Total Relay</span><strong>54.2k frames</strong></div>
+                      <div className="s-item"><span>Total Relay</span><strong>{stats.totalFrames?.toLocaleString() || '0'} frames</strong></div>
                       <div className="s-item"><span>Rewards</span><strong>{stats.honey} HONEY</strong></div>
                    </div>
                    <div className="p-config">

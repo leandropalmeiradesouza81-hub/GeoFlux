@@ -161,10 +161,11 @@ body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden;
 
 .login-screen-premium {
   background-color: #000;
-  background-image: url('C:/Users/leand/.gemini/antigravity/brain/4b116237-3c09-4bb8-bdb4-ac3151c37d4a/geoflux_login_tech_bg_1775665822402.png');
+  background-image: url('/login-bg.png');
   background-size: cover; background-position: center;
   height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
   position: relative; overflow: hidden;
+  animation: slowPan 60s linear infinite alternate;
 }
 .login-screen-premium::before {
   content: ''; position: absolute; inset: -100%;

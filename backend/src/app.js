@@ -11,6 +11,7 @@ import uploadRoutes from './routes/uploads.js';
 import tileRoutes from './routes/tiles.js';
 import financeRoutes from './routes/finance.js';
 import frameRoutes from './routes/frames.js';
+import adminRoutes from './routes/admin.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { logger } from './utils/logger.js';
 
@@ -58,6 +59,7 @@ app.use('/api/v1/uploads', uploadRoutes);
 app.use('/api/v1/tiles', tileRoutes);
 app.use('/api/v1/finance', financeRoutes);
 app.use('/api/v1/frames', frameRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 // Error handler
 app.use(errorHandler);
